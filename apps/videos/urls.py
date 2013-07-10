@@ -57,6 +57,7 @@ urlpatterns = patterns(
     url(r'^(?P<video_id>(\w|-)+)/url/(?P<video_url>\d+)/$', 'video', name='video_url'),
     url(r'^(?P<video_id>(\w|-)+)/(?P<lang>[\w\-]+)/(?P<lang_id>[\d]+)/$', 'history', name='translation_history'),
     url(r'^(?P<video_id>(\w|-)+)/(?P<lang>[\w\-]+)/(?P<lang_id>[\d]+)/(?P<version_id>[\d]+)/$', 'history', name='subtitleversion_detail'),
+    url(r'^(?P<video_id>(\w|-)+)/(?P<language_id>[\d]+)/syncyt$', 'sync_with_youtube', name='sync_with_youtube'),
     url(r'^(?P<video_id>(\w|-)+)/(?P<lang>[\w\-]+)/$', 'legacy_history', name='translation_history_legacy'),
     url(r'(?P<video_id>(\w|-)+)/staff/delete/$', 'video_staff_delete', name='video_staff_delete'),
 )

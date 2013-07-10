@@ -60,6 +60,8 @@ from apps.videos.forms import (
 from apps.videos.models import (
     Video, Action, SubtitleLanguage, VideoUrl, AlreadyEditingException
 )
+from accountlinker.models import youtube_sync
+from videos.models import VIDEO_TYPE_YOUTUBE
 from apps.videos.rpc import VideosApiClass
 from apps.videos.search_indexes import VideoIndex
 from apps.videos.share_utils import _add_share_panel_context_for_video, _add_share_panel_context_for_history
@@ -566,9 +568,27 @@ def history(request, video, lang=None, lang_id=None, version_id=None):
         if has_open_task:
             context['edit_disabled'] = True
             context['must_use_tasks'] = True
+    # sync to youtube
+    is_youtube = video.videourl_set.filter(type=VIDEO_TYPE_YOUTUBE).count() != 0
+    context['is_youtube'] = is_youtube
 
     return render_to_response("videos/subtitle-view.html", context,
                               context_instance=RequestContext(request))
+
+@login_required
+def sync_with_youtube(request, video_id=None, language_id=None):
+    video = Video.objects.get(id=video_id)
+    language = sub_models.SubtitleLanguage.objects.get(id=language_id)
+    user_can_add_version = can_add_version(request.user, video,
+                                           language.language_code)
+    if user_can_add_version:
+        youtube_sync(video, language)
+        print('sync to yt')
+    return HttpResponseRedirect(reverse("videos:translation_history", kwargs={
+            'video_id': video.video_id,
+            'lang_id': language.pk,
+            'lang': language.language_code,
+            }))
 
 def _widget_params(request, video, version_no=None, language=None, video_url=None, size=None):
     primary_url = video_url or video.get_video_url()

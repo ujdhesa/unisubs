@@ -175,6 +175,13 @@
                            href="{{ edit_url }}">
                             {% trans 'Edit Subtitles' %}
                         </a>
+                        {% if is_youtube %}
+                        <a id="sync_youtube_button"
+                           class="button"
+                           href="{% url videos:sync_with_youtube video.id,language.id %}">
+                            {% trans 'Sync to YouTube' %}
+                        </a>
+                        {% endif %}
                     {% endif %}
                 {% endif %}
 
