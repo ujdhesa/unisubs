@@ -623,7 +623,6 @@ class SubtitleLanguage(models.Model):
 
         sv = SubtitleVersion(*args, **kwargs)
 
-        sv.set_subtitles(kwargs.get('subtitles', None))
         if metadata is not None:
             sv.update_metadata(metadata, commit=False)
             # save the video to commit the changes to it
@@ -1100,11 +1099,6 @@ class SubtitleVersion(models.Model):
     meta_2_content = metadata.MetadataContentField()
     meta_3_content = metadata.MetadataContentField()
 
-    # Subtitles are stored in a text blob, serialized as base64'ed zipped XML
-    # (oh the joys of Django).  Use the subtitles property to get and set them.
-    # You shouldn't be touching this field.
-    serialized_subtitles = models.TextField()
-
     # Lineage is stored as a blob of JSON to save on DB rows.  You shouldn't
     # need to touch this field yourself, use the lineage property.
     serialized_lineage = models.TextField(blank=True)
@@ -1120,7 +1114,8 @@ class SubtitleVersion(models.Model):
         """
         # We cache the parsed subs for speed.
         if self._subtitles == None:
-            self._subtitles = load_from(decompress(self.serialized_subtitles),
+            subtitle_data = self.subtitles.serialized_subtitles
+            self._subtitles = load_from(decompress(subtitle_data),
                     type='dfxp').to_internal()
 
         return self._subtitles
@@ -1153,7 +1148,9 @@ class SubtitleVersion(models.Model):
                                 % str(type(subtitles)))
 
         self.subtitle_count = len(subtitles)
-        self.serialized_subtitles = compress(subtitles.to_xml())
+        self.subtitles = Subtitles(
+            serialized_subtitles=compress(subtitles.to_xml()))
+        self._subtitles_needs_save = True
 
         # We cache the parsed subs for speed.
         self._subtitles = subtitles
@@ -1193,11 +1190,9 @@ class SubtitleVersion(models.Model):
         version.
 
         """
-        # This is a bit clumsy, but we need to handle the subtitles kwarg like
-        # this for it to work properly.  If it's given, we set the subtitles
-        # appropriately after we create the version object.  If it's not given,
-        # we *don't* set the subtitles at all -- we just let the
-        # serialized_subtitles field stay as it is.
+        # We want to handle subtitles and lineage in the kwargs, but we can't
+        # just pass them to the Model constructor.  Instead, we pop them out
+        # now and call set_subtitles/set_lineage.
         has_subtitles = 'subtitles' in kwargs
         subtitles = kwargs.pop('subtitles', None)
 
@@ -1205,13 +1200,11 @@ class SubtitleVersion(models.Model):
 
         super(SubtitleVersion, self).__init__(*args, **kwargs)
 
-        self._subtitles = None
+        self._lineage = self._subtitles = None
         if has_subtitles:
             self.set_subtitles(subtitles)
-
-        self._lineage = None
         if lineage != None:
-            self.lineage = lineage
+            self.set_lineage(lineage)
 
     def __unicode__(self):
         return u'SubtitleVersion %s / %s / %s v%s' % (
@@ -1251,7 +1244,12 @@ class SubtitleVersion(models.Model):
         else:
             Action.create_caption_handler(self, self.created)
 
-        return super(SubtitleVersion, self).save(*args, **kwargs)
+        rv = super(SubtitleVersion, self).save(*args, **kwargs)
+        if self._subtitles_needs_save:
+            self.subtitles.subtitle_version = self
+            self.subtitles.save()
+            self._subtitles_needs_save = False
+        return rv
 
 
     def get_ancestors(self):
@@ -1522,6 +1520,20 @@ class SubtitleVersion(models.Model):
         return ('videos:subtitleversion_detail',
                 [self.video.video_id, self.language_code, self.subtitle_language.pk,
                  self.pk])
+
+class Subtitles(models.Model):
+    """Stores the subtitles for a SubtitleVersion
+
+    We don't store serialized_subtitles directly in SubtitleVersion because
+    it can be a very large column and for many operations we don't need that
+    data.  Moving the data out makes reads and updates faster.  (see gh#727)
+    """
+    subtitle_version = models.OneToOneField(SubtitleVersion, primary_key=True,
+                                            related_name='subtitles')
+    # Subtitles are stored in a text blob, serialized as base64'ed zipped XML
+    # (oh the joys of Django).  Use the subtitles property to get and set them.
+    # You shouldn't be touching this field.
+    serialized_subtitles = models.TextField()
 
 class SubtitleVersionMetadata(models.Model):
     """This model is used to add extra metadata to SubtitleVersions.

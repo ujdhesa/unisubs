@@ -119,7 +119,7 @@ class SubtitleVersionAdmin(admin.ModelAdmin):
     # .get_query_set().  We've disabled .all() on SubtitleVersion managers so we
     # can't let Django do this.  This means we can't edit parents in the admin,
     # but you should never be doing that anyway.
-    exclude = ['parents', 'serialized_subtitles']
+    exclude = ['parents']
     readonly_fields = ['parent_versions']
 
     # don't allow deletion
