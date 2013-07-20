@@ -1150,11 +1150,11 @@ class SubtitleVersion(models.Model):
         self.subtitle_count = len(subtitles)
         self.subtitles = Subtitles(
             serialized_subtitles=compress(subtitles.to_xml()))
-        # We will save subtitles in our save() method.  We need to do this
-        # because we don't have a primary key yet.
+        self._subtitles_needs_save = True
 
         # We cache the parsed subs for speed.
         self._subtitles = subtitles
+
 
     def get_lineage(self):
         # We cache the parsed lineage for speed.
@@ -1200,6 +1200,7 @@ class SubtitleVersion(models.Model):
 
         super(SubtitleVersion, self).__init__(*args, **kwargs)
 
+        self._subtitles_needs_save = False
         self._lineage = self._subtitles = None
         if has_subtitles:
             self.set_subtitles(subtitles)
@@ -1245,10 +1246,10 @@ class SubtitleVersion(models.Model):
             Action.create_caption_handler(self, self.created)
 
         rv = super(SubtitleVersion, self).save(*args, **kwargs)
-        # check if we need to save our subtitles as well
-        if self.subtitles.subtitle_version_id is None:
+        if self._subtitles_needs_save:
             self.subtitles.subtitle_version = self
             self.subtitles.save()
+            self._subtitles_needs_save = False
         return rv
 
 
