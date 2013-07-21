@@ -3,6 +3,7 @@
 
 from apps.webdriver_testing.pages.site_pages import UnisubsPage
 import requests
+import time 
 
 class BillingPage(UnisubsPage):
     """Billing page, available only to is_superuser users.
