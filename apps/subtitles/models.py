@@ -227,19 +227,16 @@ class SubtitleLanguageManager(models.Manager):
         return self.get_query_set().extra(where=[
             """
             EXISTS (
-               SELECT 1 FROM subtitles_subtitleversion AS sv
-                INNER JOIN (
-                     SELECT subtitle_language_id,
-                            MAX(version_number) AS tip_version_number
-                       FROM subtitles_subtitleversion AS subver
-                      WHERE NOT subver.visibility_override = 'deleted'
-                      GROUP BY subtitle_language_id
-                ) AS tip_versions ON (
-                    sv.subtitle_language_id = tip_versions.subtitle_language_id
-                    AND sv.version_number = tip_versions.tip_version_number
+                SELECT 1
+                FROM subtitles_subtitleversion AS sv
+                WHERE sv.version_number = (
+                    SELECT MAX(sv2.version_number)
+                    FROM subtitles_subtitleversion sv2
+                    WHERE sv2.subtitle_language_id=subtitles_subtitlelanguage.id
+                    AND sv2.visibility_override != 'deleted'
                 )
-                WHERE sv.subtitle_count > 0
-                  AND sv.subtitle_language_id = subtitles_subtitlelanguage.id
+                AND sv.subtitle_count > 0
+                AND sv.subtitle_language_id=subtitles_subtitlelanguage.id
             )
             """,
         ])
@@ -249,19 +246,16 @@ class SubtitleLanguageManager(models.Manager):
         return self.get_query_set().extra(where=[
             """
             NOT EXISTS (
-               SELECT 1 FROM subtitles_subtitleversion AS sv
-                INNER JOIN (
-                     SELECT subtitle_language_id,
-                            MAX(version_number) AS tip_version_number
-                       FROM subtitles_subtitleversion AS subver
-                      WHERE NOT subver.visibility_override = 'deleted'
-                      GROUP BY subtitle_language_id
-                ) AS tip_versions ON (
-                    sv.subtitle_language_id = tip_versions.subtitle_language_id
-                    AND sv.version_number = tip_versions.tip_version_number
+                SELECT 1
+                FROM subtitles_subtitleversion AS sv
+                WHERE sv.version_number = (
+                    SELECT MAX(sv2.version_number)
+                    FROM subtitles_subtitleversion sv2
+                    WHERE sv2.subtitle_language_id=subtitles_subtitlelanguage.id
+                    AND sv2.visibility_override != 'deleted'
                 )
-                WHERE sv.subtitle_count > 0
-                  AND sv.subtitle_language_id = subtitles_subtitlelanguage.id
+                AND sv.subtitle_count > 0
+                AND sv.subtitle_language_id=subtitles_subtitlelanguage.id
             )
             """,
         ])
