@@ -115,10 +115,10 @@ class TeamVideoLanguagesIndex(SearchIndex):
         self.prepared_data['project_slug'] = obj.project.slug
         self.prepared_data['team_video_create_date'] = obj.created
 
-        completed_sls = obj.video.completed_subtitle_languages()
+        completed_sls = list(obj.video.completed_subtitle_languages())
         all_sls = obj.video.newsubtitlelanguage_set.having_nonempty_tip()
 
-        self.prepared_data['num_total_langs'] = len(all_sls)
+        self.prepared_data['num_total_langs'] = all_sls.count()
         self.prepared_data['num_completed_langs'] = len(completed_sls)
 
         self.prepared_data['video_completed_langs'] = \
