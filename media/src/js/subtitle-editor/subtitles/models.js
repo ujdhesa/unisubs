@@ -209,13 +209,16 @@ var angular = angular || null;
 	 * and updates the history
 	 */
 	if (this.hasUndo()) {
-	    var output = this.history[(this.currIndex - 1) % this.historyLength];
-	    this.currIndex = (this.currIndex - 1) % this.historyLength;
+	    var newIndex = this.currIndex - 1;
+	    if (newIndex == -1) newIndex = this.historyLength - 1;
+	    var output = this.history[newIndex];
+	    this.currIndex = newIndex;
 	    this.numUndo = Math.max(0, this.numUndo - 1);
 	    this.numRedo++;
 	    return output;
-	} else
+	} else {
 	    return null;
+	}
     };
     
     History.prototype.getRedo = function() {
@@ -227,7 +230,7 @@ var angular = angular || null;
 	    var output = this.history[this.currIndex];
 	    this.currIndex = (this.currIndex + 1) % this.historyLength;
 	    this.numUndo = Math.min(this.numUndo + 1, this.historyLength);
-	    this.numRedo = 0;
+	    this.numRedo--;
 	    return output;
 	} else
 	    return null;
@@ -289,6 +292,7 @@ var angular = angular || null;
 		break;
 	    }
 	}
+	return this;
     }
 
     SubtitleList.prototype.canRedo = function() {
@@ -325,6 +329,7 @@ var angular = angular || null;
 		break;
 	    }
 	}
+	return this;
     }
 
     SubtitleList.prototype.contentForMarkdown = function(markdown) {
@@ -531,11 +536,11 @@ var angular = angular || null;
         } else {
             var after = -1;
         }
-	if (pos < this.subtitles.length - 1 && this.subtitles[pos+1].isSynced()) {
-	}
         var node = this.parser.addSubtitle(after, {begin: changeObj.startTime, end: changeObj.endTime});
         var subtitle = this.makeItem(node);
-	if (pos < this.subtitles.length - 1) {
+	if (changeObj.hasOwnProperty('content'))
+	    this._updateSubtitleContent(subtitle, changeObj.content);
+	if (pos < this.subtitles.length) {
             this.subtitles.splice(pos, 0, subtitle);
         } else {
             this.subtitles.push(subtitle);
@@ -614,10 +619,11 @@ var angular = angular || null;
         var pos = this.getIndex(subtitle);
 	var changeObj = {
 	    pos: pos,
-	    content: subtitle.content,
 	    endTime: subtitle.endTime,
 	    startTime: subtitle.startTime
 	};
+	if (subtitle.hasOwnProperty('markdown'))
+	    changeObj.content = subtitle.content();
         this.parser.removeSubtitle(subtitle.node);
         this.subtitles.splice(pos, 1);
         if(subtitle.isSynced()) {
