@@ -181,7 +181,6 @@ var angular = angular || null;
 	/*
 	 * Appends an operation to the history, this resets
 	 * possible redos
-	 *
 	 */
 	this.history[this.currIndex] = changeObj;
 	this.currIndex = (this.currIndex + 1) % this.historyLength;
@@ -206,7 +205,7 @@ var angular = angular || null;
     History.prototype.getUndo = function() {
 	/*
 	 * Retrieves the operation for an undo
-	 * and updates the history
+	 * and updates the history accordingly
 	 */
 	if (this.hasUndo()) {
 	    var newIndex = this.currIndex - 1;
@@ -224,7 +223,7 @@ var angular = angular || null;
     History.prototype.getRedo = function() {
 	/*
 	 * Retrieves the operation for a redo
-	 * and updates the history
+	 * and updates the history accordingly
 	 */
 	if (this.hasRedo()) {
 	    var output = this.history[this.currIndex];
@@ -263,7 +262,7 @@ var angular = angular || null;
 
     SubtitleList.prototype.Undo = function() {
 	/*
-	 * To undo, we pop an operation from the history
+	 * To undo, we retrieve an operation from the history
 	 * and do the inverted operation
 	 *
 	 */
@@ -273,21 +272,28 @@ var angular = angular || null;
 	    switch(changeObj.type) {
 	    case "update":
 		var newObj = {};
-		changeObj.hasOwnProperty('fromContent') && (newObj.content = changeObj.fromContent);
-		changeObj.hasOwnProperty('fromStartTime') && (newObj.startTime = changeObj.fromStartTime);
-		changeObj.hasOwnProperty('fromEndTime') && (newObj.endTime = changeObj.fromEndTime);
+		changeObj.hasOwnProperty('fromContent') &&
+		    (newObj.content = changeObj.fromContent);
+		changeObj.hasOwnProperty('fromStartTime') &&
+		    (newObj.startTime = changeObj.fromStartTime);
+		changeObj.hasOwnProperty('fromEndTime') &&
+		    (newObj.endTime = changeObj.fromEndTime);
 		this._updateSubtitleByPos(pos, newObj);
 		break;
 	    case "insert":
 		var newObj = {};
-		changeObj.hasOwnProperty('previousTiming') && (newObj.previousTiming = changeObj.previousTiming);
+		changeObj.hasOwnProperty('previousTiming') &&
+		    (newObj.previousTiming = changeObj.previousTiming);
 		this._removeSubtitleByPos(pos, newObj);
 		break;
 	    case "remove":
 		var newObj = {};
-		changeObj.hasOwnProperty('content') && (newObj.content = changeObj.content);
-		changeObj.hasOwnProperty('startTime') && (newObj.startTime = changeObj.startTime);
-		changeObj.hasOwnProperty('endTime') && (newObj.endTime = changeObj.endTime);
+		changeObj.hasOwnProperty('content') &&
+		    (newObj.content = changeObj.content);
+		changeObj.hasOwnProperty('startTime') &&
+		    (newObj.startTime = changeObj.startTime);
+		changeObj.hasOwnProperty('endTime') &&
+		    (newObj.endTime = changeObj.endTime);
 		this._insertSubtitleByPos(pos, newObj);
 		break;
 	    }
@@ -301,7 +307,7 @@ var angular = angular || null;
 
     SubtitleList.prototype.Redo = function() {
 	/*
-	 * To undo, we pop an operation from the history
+	 * To redo, we get an operation from the history
 	 * and... redo it
 	 *
 	 */
@@ -311,9 +317,12 @@ var angular = angular || null;
 	    switch(changeObj.type) {
 	    case "update":
 		var newObj = {};
-		changeObj.hasOwnProperty('toContent') && (newObj.content = changeObj.toContent);
-		changeObj.hasOwnProperty('toStartTime') && (newObj.startTime = changeObj.toStartTime);
-		changeObj.hasOwnProperty('toEndTime') && (newObj.endTime = changeObj.toEndTime);
+		changeObj.hasOwnProperty('toContent') &&
+		    (newObj.content = changeObj.toContent);
+		changeObj.hasOwnProperty('toStartTime') &&
+		    (newObj.startTime = changeObj.toStartTime);
+		changeObj.hasOwnProperty('toEndTime') &&
+		    (newObj.endTime = changeObj.toEndTime);
 		this._updateSubtitleByPos(pos, newObj);
 		break;
 	    case "remove":
@@ -322,9 +331,12 @@ var angular = angular || null;
 		break;
 	    case "insert":
 		var newObj = {};
-		changeObj.hasOwnProperty('content') && (newObj.content = changeObj.content);
-		changeObj.hasOwnProperty('startTime') && (newObj.startTime = changeObj.startTime);
-		changeObj.hasOwnProperty('endTime') && (newObj.endTime = changeObj.endTime);
+		changeObj.hasOwnProperty('content') &&
+		    (newObj.content = changeObj.content);
+		changeObj.hasOwnProperty('startTime') &&
+		    (newObj.startTime = changeObj.startTime);
+		changeObj.hasOwnProperty('endTime') &&
+		    (newObj.endTime = changeObj.endTime);
 		this._insertSubtitleByPos(pos, newObj);
 		break;
 	    }
@@ -409,17 +421,32 @@ var angular = angular || null;
     }
 
     SubtitleList.prototype.emitChange = function(type, subtitle, extraProps) {
-        changeObj = { type: type, subtitle: subtitle };
+	/*
+	 * Used to emit callbacks and append items to the history
+	 *
+	 */
+        var changeObj = { type: type, subtitle: subtitle };
+	// We keep two objects with data just to keep the exact
+	// same objects passed to callbacks. It's probably not
+	// necessary but helps tests pass!
+        var historyObj = { type: type, subtitle: subtitle };
+	var updateHistory = true;
         if(extraProps) {
             for(key in extraProps) {
-                changeObj[key] = extraProps[key];
+		if (key == 'updateHistory')
+		    updateHistory = extraProps[key];
+                historyObj[key] = extraProps[key];
+		if(['type', 'subtitle', 'before'].indexOf(key) > -1)
+                    changeObj[key] = extraProps[key];
             }
         }
-	if (["remove", "update", "insert"].indexOf(type) > -1)
-	    this.history.append(changeObj);
-	// Reloading invalidates the history
-	if (["reload"].indexOf(type) > -1)
-	    this.history.reset();
+	if(updateHistory) {
+	    if (["remove", "update", "insert"].indexOf(type) > -1)
+		this.history.append(historyObj);
+	    // Reloading invalidates the history
+	    if (["reload"].indexOf(type) > -1)
+		this.history.reset();
+	}
         for(var i=0; i < this.changeCallbacks.length; i++) {
             this.changeCallbacks[i](changeObj);
         }
@@ -517,7 +544,7 @@ var angular = angular || null;
 						changeObj.endTime));
 	changeObj.hasOwnProperty('content') && (this._updateSubtitleContent(this.subtitles[pos],
 								    changeObj.content));
-	
+        this.emitChange('update', this.subtitles[pos], {'updateHistory': false});
     }
 
     SubtitleList.prototype.updateSubtitleContent = function(subtitle, content) {
@@ -536,6 +563,7 @@ var angular = angular || null;
         } else {
             var after = -1;
         }
+	var otherSubtitle = (pos == this.subtitles.length - 1) ? null : this.subtitles[pos+1];
         var node = this.parser.addSubtitle(after, {begin: changeObj.startTime, end: changeObj.endTime});
         var subtitle = this.makeItem(node);
 	if (changeObj.hasOwnProperty('content'))
@@ -548,6 +576,7 @@ var angular = angular || null;
         if(subtitle.isSynced()) {
             this.syncedCount++;
         }
+        this.emitChange('insert', subtitle, { 'before': otherSubtitle, 'updateHistory': false});
     }
 
     SubtitleList.prototype.insertSubtitleBefore = function(otherSubtitle) {
@@ -563,6 +592,10 @@ var angular = angular || null;
         } else {
             var after = -1;
         }
+	var changeObj = {
+	    before: otherSubtitle,
+	    pos: pos
+	};
 	var previousTiming = {};
         if(otherSubtitle && otherSubtitle.isSynced()) {
             // If we are inserting between 2 synced subtitles, then we can set the
@@ -576,6 +609,8 @@ var angular = angular || null;
                 var startTime = firstSubtitle.startTime + durationSplit;
 		previousTiming.firstSubtitleStartTime = firstSubtitle.startTime;
                 var endTime = startTime + durationSplit;
+		changeObj.startTime = startTime;
+		changeObj.endTime = endTime;
                 this._updateSubtitleTime(firstSubtitle, firstSubtitle.startTime,
                         startTime);
                 this._updateSubtitleTime(otherSubtitle, endTime, otherSubtitle.endTime);
@@ -585,6 +620,8 @@ var angular = angular || null;
                 // available to the two subtitles
                 var startTime = 0;
                 var endTime = Math.floor(otherSubtitle.endTime / 2);
+		changeObj.startTime = startTime;
+		changeObj.endTime = endTime;
 		previousTiming.otherSubtitleEndTime = otherSubtitle.endTime;
                 this._updateSubtitleTime(otherSubtitle, endTime, otherSubtitle.endTime);
             }
@@ -605,11 +642,7 @@ var angular = angular || null;
         if(subtitle.isSynced()) {
             this.syncedCount++;
         }
-	var changeObj = {
-	    before: otherSubtitle,
-	    pos: pos,
-	    previousTiming: previousTiming
-	};
+	changeObj.previousTiming = previousTiming;
         this.emitChange('insert', subtitle, changeObj);
         //this.emitChange('insert', subtitle, { 'before': otherSubtitle, 'pos': pos, 'previousTiming': previousTiming});
         return subtitle;
@@ -633,8 +666,9 @@ var angular = angular || null;
     }
 
     SubtitleList.prototype._removeSubtitleByPos = function(pos, changeObj) {
-        this.parser.removeSubtitle(this.subtitles[pos].node);
-        if(this.subtitles[pos].isSynced()) {
+	var subtitle = this.subtitles[pos];
+        this.parser.removeSubtitle(subtitle.node);
+        if(subtitle.isSynced()) {
             this.syncedCount--;
         }
 	(pos < this.subtitles.length - 1) &&
@@ -646,6 +680,7 @@ var angular = angular || null;
 	    changeObj.previousTiming.hasOwnProperty('otherSubtitleEndTime') &&
 	    this._updateSubtitleTime(this.subtitles[pos-1], this.subtitles[pos].startTime, changeObj.previousTiming.otherSubtitleEndTime);
         this.subtitles.splice(pos, 1);
+        this.emitChange('remove', subtitle, {'updateHistory': false});
     }
 
     SubtitleList.prototype.lastSyncedSubtitle = function() {
