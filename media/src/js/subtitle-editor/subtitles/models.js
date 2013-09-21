@@ -270,21 +270,21 @@ var angular = angular || null;
 	    switch(changeObj.type) {
 	    case "update":
 		var newObj = {};
-		changeObj.fromContent && (newObj.content = changeObj.fromContent);
-		changeObj.fromStartTime && (newObj.startTime = changeObj.fromStartTime);
-		changeObj.fromEndTime && (newObj.endTime = changeObj.fromEndTime);
+		changeObj.hasOwnProperty('fromContent') && (newObj.content = changeObj.fromContent);
+		changeObj.hasOwnProperty('fromStartTime') && (newObj.startTime = changeObj.fromStartTime);
+		changeObj.hasOwnProperty('fromEndTime') && (newObj.endTime = changeObj.fromEndTime);
 		this._updateSubtitleByPos(pos, newObj);
 		break;
 	    case "insert":
 		var newObj = {};
-		changeObj.previousTiming && (newObj.previousTiming = changeObj.previousTiming);
+		changeObj.hasOwnProperty('previousTiming') && (newObj.previousTiming = changeObj.previousTiming);
 		this._removeSubtitleByPos(pos, newObj);
 		break;
 	    case "remove":
 		var newObj = {};
-		changeObj.content && (newObj.content = changeObj.content);
-		changeObj.startTime && (newObj.startTime = changeObj.startTime);
-		changeObj.endTime && (newObj.endTime = changeObj.endTime);
+		changeObj.hasOwnProperty('content') && (newObj.content = changeObj.content);
+		changeObj.hasOwnProperty('startTime') && (newObj.startTime = changeObj.startTime);
+		changeObj.hasOwnProperty('endTime') && (newObj.endTime = changeObj.endTime);
 		this._insertSubtitleByPos(pos, newObj);
 		break;
 	    }
@@ -307,9 +307,9 @@ var angular = angular || null;
 	    switch(changeObj.type) {
 	    case "update":
 		var newObj = {};
-		changeObj.toContent && (newObj.content = changeObj.toContent);
-		changeObj.toStartTime && (newObj.startTime = changeObj.toStartTime);
-		changeObj.toEndTime && (newObj.endTime = changeObj.toEndTime);
+		changeObj.hasOwnProperty('toContent') && (newObj.content = changeObj.toContent);
+		changeObj.hasOwnProperty('toStartTime') && (newObj.startTime = changeObj.toStartTime);
+		changeObj.hasOwnProperty('toEndTime') && (newObj.endTime = changeObj.toEndTime);
 		this._updateSubtitleByPos(pos, newObj);
 		break;
 	    case "remove":
@@ -318,9 +318,9 @@ var angular = angular || null;
 		break;
 	    case "insert":
 		var newObj = {};
-		changeObj.content && (newObj.content = changeObj.content);
-		changeObj.startTime && (newObj.startTime = changeObj.startTime);
-		changeObj.endTime && (newObj.endTime = changeObj.endTime);
+		changeObj.hasOwnProperty('content') && (newObj.content = changeObj.content);
+		changeObj.hasOwnProperty('startTime') && (newObj.startTime = changeObj.startTime);
+		changeObj.hasOwnProperty('endTime') && (newObj.endTime = changeObj.endTime);
 		this._insertSubtitleByPos(pos, newObj);
 		break;
 	    }
@@ -506,15 +506,19 @@ var angular = angular || null;
     }
 
     SubtitleList.prototype._updateSubtitleByPos = function(pos, changeObj) {
-	changeObj.startTime && (this.subtitles[pos].startTime = changeObj.startTime);
-	changeObj.endTime && (this.subtitles[pos].endTime = changeObj.endTime);
-	changeObj.content && (this.subtitles[pos].content = changeObj.content);
+	changeObj.startTime && changeObj.endTime &&
+	    (this._updateSubtitleTime(this.subtitles[pos],
+						changeObj.startTime,
+						changeObj.endTime));
+	changeObj.hasOwnProperty('content') && (this._updateSubtitleContent(this.subtitles[pos],
+								    changeObj.content));
+	
     }
 
     SubtitleList.prototype.updateSubtitleContent = function(subtitle, content) {
 	var changeObj = {
 	    pos: this.getIndex(subtitle),
-	    fromContent: subtitle.content,
+	    fromContent: subtitle.content(),
 	    toContent: content
 	};
         this._updateSubtitleContent(subtitle, content);
@@ -627,7 +631,14 @@ var angular = angular || null;
         if(this.subtitles[pos].isSynced()) {
             this.syncedCount--;
         }
-	//TODO, re-adjust adjacent subtitles 
+	(pos < this.subtitles.length - 1) &&
+	    changeObj.hasOwnProperty('previousTiming') &&
+	    changeObj.previousTiming.hasOwnProperty('firstSubtitleStartTime') &&
+	    this._updateSubtitleTime(this.subtitles[pos], changeObj.previousTiming.firstSubtitleStartTime, this.subtitles[pos].endTime);
+	(pos >0) &&
+	    changeObj.hasOwnProperty('previousTiming') &&
+	    changeObj.previousTiming.hasOwnProperty('otherSubtitleEndTime') &&
+	    this._updateSubtitleTime(this.subtitles[pos-1], this.subtitles[pos].startTime, changeObj.previousTiming.otherSubtitleEndTime);
         this.subtitles.splice(pos, 1);
     }
 

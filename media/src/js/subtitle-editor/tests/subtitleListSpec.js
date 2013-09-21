@@ -1,3 +1,21 @@
+var compareSubtitleLists = function(subtitleList1, subtitleList2) {
+    if (subtitleList1.length != subtitleList2.length)
+	return false;
+    for(var i = 0; i < subtitleList1.length; i++) {
+	var sub1 = subtitleList1[i];
+	var sub2 = subtitleList2[i];
+	if ((sub1.startTime != sub2.startTime) ||
+	    (sub1.endTime != sub2.endTime) ||
+	    (sub1.markdown != sub2.markdown))
+	{
+	    //console.log("Differ with " + JSON.stringify(sub1) + " and " + JSON.stringify(sub2));
+	    return false;
+	}
+    }
+    return true;
+}
+
+
 describe('Test the SubtitleList class', function() {
     var subtitleList = null;
 
@@ -63,7 +81,22 @@ describe('Test the SubtitleList class', function() {
 	subtitleList.Undo();
 	expect(subtitleList.subtitles).toEqual([]);
 	subtitleList.Redo();
-	expect(subtitleList.subtitles.length).toEqual(1);
+	expect(compareSubtitleLists(subtitleList.subtitles, [sub1])).toEqual(true);
+    });
+
+    it('should support redoing editions', function() {
+        var sub = subtitleList.insertSubtitleBefore(null);
+        var subclone1 = JSON.parse(JSON.stringify(sub));
+	subtitleList.updateSubtitleContent(sub, 'test');
+	var subclone2 = JSON.parse(JSON.stringify(sub));
+	expect(compareSubtitleLists(subtitleList.subtitles, [subclone1])).toEqual(false);
+	expect(compareSubtitleLists(subtitleList.subtitles, [subclone2])).toEqual(true);
+	subtitleList.Undo();
+	expect(compareSubtitleLists(subtitleList.subtitles, [subclone1])).toEqual(true);
+	expect(compareSubtitleLists(subtitleList.subtitles, [subclone2])).toEqual(false);
+	subtitleList.Redo();
+	expect(compareSubtitleLists(subtitleList.subtitles, [subclone1])).toEqual(false);
+	expect(compareSubtitleLists(subtitleList.subtitles, [subclone2])).toEqual(true);
     });
 
     it('should not propose any redo after any operation', function() {
