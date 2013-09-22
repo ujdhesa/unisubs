@@ -42,13 +42,13 @@ describe('Test the SubtitleList class', function() {
 
     it('should properly undo when empty', function() {
 	expect(subtitleList.canUndo()).toEqual(false);
-	subtitleList.Undo();
+	subtitleList.undo();
         expect(subtitleList.subtitles).toEqual([]);
     });
 
     it('should properly redo when empty', function() {
 	expect(subtitleList.canRedo()).toEqual(false);
-	subtitleList.Redo();
+	subtitleList.redo();
         expect(subtitleList.subtitles).toEqual([]);
     });
 
@@ -68,20 +68,20 @@ describe('Test the SubtitleList class', function() {
     it('should support undoing insertion and removal', function() {
         var sub1 = subtitleList.insertSubtitleBefore(null);
 	expect(subtitleList.subtitles).toEqual([sub1]);
-	subtitleList.Undo();
+	subtitleList.undo();
 	expect(subtitleList.subtitles).toEqual([]);
         var sub2 = subtitleList.insertSubtitleBefore(null);
         var sub3 = subtitleList.insertSubtitleBefore(sub2);
-	subtitleList.Undo();
+	subtitleList.undo();
 	expect(subtitleList.subtitles).toEqual([sub2]);
     });
 
     it('should support redoing an undone insertion', function() {
         var sub1 = subtitleList.insertSubtitleBefore(null);
 	expect(subtitleList.subtitles).toEqual([sub1]);
-	subtitleList.Undo();
+	subtitleList.undo();
 	expect(subtitleList.subtitles).toEqual([]);
-	subtitleList.Redo();
+	subtitleList.redo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [sub1])).toEqual(true);
     });
 
@@ -92,10 +92,10 @@ describe('Test the SubtitleList class', function() {
 	var subclone2 = sub.draftSubtitle();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone1])).toEqual(false);
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone2])).toEqual(true);
-	subtitleList.Undo();
+	subtitleList.undo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone1])).toEqual(true);
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone2])).toEqual(false);
-	subtitleList.Redo();
+	subtitleList.redo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone1])).toEqual(false);
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone2])).toEqual(true);
     });
@@ -114,15 +114,15 @@ describe('Test the SubtitleList class', function() {
 	var subclone1 = sub1.draftSubtitle();
 	var subclone2 = sub2.draftSubtitle();
 	var subclone3 = sub3.draftSubtitle();
-	subtitleList.Undo().Undo().Undo().Undo().Undo().Undo().Undo().Undo();
+	subtitleList.undo().undo().undo().undo().undo().undo().undo().undo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone0])).toEqual(true);
-	subtitleList.Redo().Redo().Redo().Redo().Redo().Redo().Redo().Redo();
+	subtitleList.redo().redo().redo().redo().redo().redo().redo().redo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone3, subclone2, subclone1])).toEqual(true);
 	subtitleList.removeSubtitle(subtitleList.subtitles[1]);
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone3, subclone1])).toEqual(true);
-	subtitleList.Undo();
+	subtitleList.undo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone3, subclone2, subclone1])).toEqual(true);
-	subtitleList.Redo();
+	subtitleList.redo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone3, subclone1])).toEqual(true);
     });
 
@@ -134,9 +134,9 @@ describe('Test the SubtitleList class', function() {
         var sub2 = subtitleList.insertSubtitleBefore(sub);
 	var subclone2 = sub2.draftSubtitle();
 	var subclone_2 = sub.draftSubtitle();
-	subtitleList.Undo();
+	subtitleList.undo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone])).toEqual(true);
-	subtitleList.Redo();
+	subtitleList.redo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone2, subclone_2])).toEqual(true);
     });
 
@@ -148,9 +148,9 @@ describe('Test the SubtitleList class', function() {
         var sub2 = subtitleList.insertSubtitleBefore(null);
 	var subclone2 = sub2.draftSubtitle();
 	var subclone_2 = sub.draftSubtitle();
-	subtitleList.Undo();
+	subtitleList.undo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone])).toEqual(true);
-	subtitleList.Redo();
+	subtitleList.redo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone_2, subclone2])).toEqual(true);
     });
 
@@ -167,9 +167,9 @@ describe('Test the SubtitleList class', function() {
 	var subclone3 = sub3.draftSubtitle();
 	var subclone1_2 = sub1.draftSubtitle();
 	var subclone2_2 = sub2.draftSubtitle();
-	subtitleList.Undo();
+	subtitleList.undo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone1, subclone2])).toEqual(true);
-	subtitleList.Redo();
+	subtitleList.redo();
 	expect(compareSubtitleLists(subtitleList.subtitles, [subclone1_2, subclone3, subclone2_2])).toEqual(true);
     });
 
@@ -181,17 +181,17 @@ describe('Test the SubtitleList class', function() {
             subtitleList.insertSubtitleBefore(null);
 	for (var i = 0 ; i < subtitleList.history.historyLength; i++) {
 	    expect(subtitleList.canUndo()).toEqual(true);
-	    subtitleList.Undo();
+	    subtitleList.undo();
 	}
 	expect(subtitleList.canUndo()).toEqual(false);
-	subtitleList.Undo();
+	subtitleList.undo();
 	expect(subtitleList.subtitles).toEqual([sub]);
     });
 
     it('should not propose any redo after any operation', function() {
 	expect(subtitleList.canRedo()).toEqual(false);
         var sub1 = subtitleList.insertSubtitleBefore(null);
-	subtitleList.Undo();
+	subtitleList.undo();
 	expect(subtitleList.canRedo()).toEqual(true);
         var sub2 = subtitleList.insertSubtitleBefore(null);
 	expect(subtitleList.canRedo()).toEqual(false);

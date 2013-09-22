@@ -260,7 +260,7 @@ var angular = angular || null;
 	return this.history.hasUndo();
     }
 
-    SubtitleList.prototype.Undo = function() {
+    SubtitleList.prototype.undo = function() {
 	/*
 	 * To undo, we retrieve an operation from the history
 	 * and do the inverted operation
@@ -305,7 +305,7 @@ var angular = angular || null;
 	return this.history.hasRedo();
     }
 
-    SubtitleList.prototype.Redo = function() {
+    SubtitleList.prototype.redo = function() {
 	/*
 	 * To redo, we get an operation from the history
 	 * and... redo it
