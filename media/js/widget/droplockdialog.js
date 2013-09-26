@@ -72,7 +72,7 @@ unisubs.widget.DropLockDialog.prototype.createDom = function() {
                "Warning: you've been idle for more than " + 
                unisubs.Dialog.MINUTES_TILL_WARNING + 
                " minutes. To ensure your work is not lost, we will save this draft and close your session in " + 
-               this.timeRemainingSpan_,
+               this.timeRemainingSpan_.innerHTML,
                " seconds."),
             this.backToEditingButton_,
             this.clearDiv_);
