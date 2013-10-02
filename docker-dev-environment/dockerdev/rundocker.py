@@ -38,6 +38,7 @@ def run_manage(manage_args, docker_args=None, settings='docker_dev_settings'):
     run_cmd = [
         'docker',
         'run',
+        '-h unisubs.example.com',
         '-i', '-t',
         '-cidfile=%s' % cid_path(image_name),
         '-e', 'DJANGO_SETTINGS_MODULE=%s' % settings,
