@@ -595,6 +595,9 @@ class Project(models.Model):
     DEFAULT_NAME = "_root"
 
     team = models.ForeignKey(Team)
+    shared_teams = models.ManyToManyField(Team,
+                                          related_name='shared_projects')
+
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(blank=True)
 
