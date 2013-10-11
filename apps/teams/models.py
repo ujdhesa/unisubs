@@ -60,7 +60,8 @@ from videos.models import Video, VideoUrl, SubtitleVersion, SubtitleLanguage
 from subtitles.models import (
     SubtitleVersion as NewSubtitleVersion,
     SubtitleLanguage as NewSubtitleLanguage,
-    ORIGIN_IMPORTED
+    ORIGIN_IMPORTED,
+    ALL_LANGUAGES
 )
 from subtitles import pipeline
 
@@ -3041,6 +3042,61 @@ class Partner(models.Model):
 
     def is_admin(self, user):
         return user in self.admins.all()
+
+class Collaboration(models.Model):
+    """Tracks subtitling work for a video language."""
+
+    # video/language being worked on
+    team_video = models.ForeignKey(TeamVideo)
+    language_code = models.CharField(max_length=16, choices=ALL_LANGUAGES)
+    # team doing the work.  Note that the video can be owned by a different
+    # team in the case of shared projects.  Use owning_team() to get the team
+    # that owns the video.
+    team = models.ForeignKey(Team)
+
+    def owning_team(self):
+        return self.team_video.team
+
+class Collaborator(models.Model):
+    """User who is part of a collaboration."""
+
+    ROLE_SUBTITLER = "S"
+    ROLE_REVIEWER = "R"
+    ROLE_APPROVER = "A"
+    ROLES = [
+        (ROLE_SUBTITLER, _('Subtitler')),
+        (ROLE_REVIEWER, _('Reviewer')),
+        (ROLE_APPROVER, _('Approver')),
+    ]
+
+    collaboration = models.ForeignKey(Collaboration)
+    user = models.ForeignKey(User)
+    role = models.CharField(max_length=1, choices=ROLES)
+    start_date = models.DateTimeField()
+    endorsement_date = models.DateTimeField(blank=True, null=True)
+
+class CollaborationHistory(models.Model):
+    """Tracks changes to a collaboration."""
+
+    ACTION_USER_JOINED = "J"
+    ACTION_USER_ENDORSED = "E"
+    ACTION_USER_UNENDORSED = "U"
+    ACTION_USER_LEFT = "L"
+    ACTION_USER_REMOVED = "R"
+    ACTIONS = [
+        (ACTION_USER_JOINED, _('User joined collaboration')),
+        (ACTION_USER_ENDORSED, _('User endorsed collaboration')),
+        (ACTION_USER_UNENDORSED, _('User unendorsed collaboration')),
+        (ACTION_USER_LEFT, _('User left collaboration')),
+        (ACTION_USER_REMOVED, _('User was removed from collaboration')),
+    ]
+
+    collaboration = models.ForeignKey(Collaboration)
+    collaborator = models.ForeignKey(Collaborator, related_name='+')
+    collaborator2 = models.ForeignKey(Collaborator, blank=True, null=True,
+                                      related_name='+')
+    action = models.CharField(max_length=1, choices=ACTIONS)
+    date = models.DateTimeField()
 
 # we know that models.py is always loaded, import signalhandlers to ensure it
 # gets loaded as well
