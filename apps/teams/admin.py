@@ -183,8 +183,8 @@ class SettingAdmin(admin.ModelAdmin):
     ordering = ('-created',)
 
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('name', 'team', 'workflow_enabled')
-    list_filter = ('workflow_enabled', 'created', 'modified')
+    list_display = ('name', 'team')
+    list_filter = ('created', 'modified')
     search_fields = ('team__name', 'name')
     raw_id_fields = ('team',)
     ordering = ('-created',)

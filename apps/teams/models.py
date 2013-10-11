@@ -610,8 +610,6 @@ class Project(models.Model):
     slug = models.SlugField(blank=True)
     order = models.PositiveIntegerField(default=0)
 
-    workflow_enabled = models.BooleanField(default=False)
-
     objects = ProjectManager()
 
     def __unicode__(self):
@@ -1431,16 +1429,6 @@ class Workflow(models.Model):
                 team_video = TeamVideo.objects.get(pk=id)
                 id, type = team_video.project_id, 'project'
 
-        if type == 'project':
-            try:
-                return [w for w in workflows
-                        if w.project and w.project.workflow_enabled
-                        and w.project.id == id and not w.team_video][0]
-            except IndexError:
-                # If there's no project-specific workflow for this project,
-                # there might be one for its team, so we'll fall through.
-                pass
-
         if not team.workflow_enabled:
             return default_workflow
 
@@ -1467,19 +1455,6 @@ class Workflow(models.Model):
             team_video._cached_workflow = Workflow.get_for_target(
                     team_video.id, 'team_video', workflows)
         return team_video._cached_workflow
-
-    @classmethod
-    def get_for_project(cls, project, workflows=None):
-        '''Return the most specific Workflow for the given project.
-
-        If workflows is given, it should be a QuerySet or List of all Workflows
-        for the Project's team.  This will let you look it up yourself once
-        and use it in many of these calls to avoid hitting the DB each time.
-
-        If workflows is not given it will be looked up with one DB query.
-
-        '''
-        return Workflow.get_for_target(project.id, 'project', workflows)
 
     @classmethod
     def add_to_team_videos(cls, team_videos):

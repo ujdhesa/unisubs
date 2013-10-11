@@ -105,8 +105,9 @@ TeamsApi = TeamsApiClass()
 
 
 def _project_to_dict(p):
-    d  = model_to_dict(p, fields=["name", "slug", "order", "description", "pk",
-                                  "workflow_enabled"])
+    d  = model_to_dict(p, fields=[
+        "name", "slug", "order", "description", "pk"
+    ])
     d.update({
         "pk":p.pk,
         "url": reverse("teams:project_video_list", kwargs={

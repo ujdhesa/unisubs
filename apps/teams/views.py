@@ -281,7 +281,7 @@ def settings_guidelines(request, team):
 @render_to('teams/settings-permissions.html')
 @settings_page
 def settings_permissions(request, team):
-    workflow = Workflow.get_for_target(team.id, 'team')
+    workflow = team.get_workflow()
     moderated = team.moderates_videos()
 
     if request.POST:
