@@ -556,7 +556,24 @@ class InviteForm(forms.Form):
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ('name', 'description', 'workflow_enabled')
+        fields = ('name', 'description', 'shared_teams')
+
+    def __init__(self, team, data=None, instance=None):
+        if instance is not None and instance.team_id != team.id:
+            raise ValueError("ProjectForm: Team mismatch %s -- %s" %
+                             (team, instance.team))
+        self.team = team
+        forms.ModelForm.__init__(self, data, instance=instance)
+        other_teams_qs = Team.objects.exclude(id=team.id)
+        self.fields['shared_teams'].queryset = other_teams_qs
+
+    def save(self, commit=True):
+        project = forms.ModelForm.save(self, commit=False)
+        project.team = self.team
+        if commit:
+            project.save()
+            self.save_m2m()
+        return project
 
 class DeleteLanguageVerifyField(forms.CharField):
     def __init__(self):

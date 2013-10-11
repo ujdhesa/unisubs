@@ -40,36 +40,12 @@
                 <label for="id_description">{% trans 'Description' %}</label>
                 {{ form.errors.description }}
                 {{ form.description }}
-            </fieldset>
 
-            {% comment %}
-                <fieldset>
-                    <legend>Workflows</legend>
-                    <p class="notation">{% trans "Moderate this project's subtitles. Will override the team's workflow if exists." %}</p>
-    
-                    <label for="id_workflow_enabled">{{ form.workflow_enabled }} {% trans 'Enable workflows' %}</label>
-                </fieldset>
-    
-                <div class="workflow">
-                    <fieldset id="workflow">
-                        <label for="id_autocreate_subtitle">
-                            {{ workflow_form.autocreate_subtitle }}
-                            {% trans 'Automatically create subtitle tasks' %}
-                        </label>
-    
-                        <label for="id_autocreate_translate">
-                            {{ workflow_form.autocreate_translate }}
-                            {% trans 'Automatically create translation tasks for preferred languages' %} (<a href="{% url teams:settings_languages slug=team.slug %}">{% trans 'manage languages' %}</a>)
-                        </label>
-    
-                        <label for="id_review_allowed">{% trans 'Review' %}</label>
-                        {{ workflow_form.review_allowed }}
-    
-                        <label for="id_approve_allowed">{% trans 'Approval' %}</label>
-                        {{ workflow_form.approve_allowed }}
-                    </fieldset>
-                </div> 
-            {% endcomment %}
+                <label for="id_shared_teams">{% trans 'Share project with other teams' %}</label>
+                {{ form.errors.shared_teams }}
+                {{ form.shared_teams }}
+
+            </fieldset>
 
             <div class="submit">
                 <input type="submit" onclick="return confirm('{% trans 'Are you sure you want to delete this project?' %}');" name="delete" class="button delete project-delete" value="Delete" />

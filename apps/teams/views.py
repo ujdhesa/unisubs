@@ -1629,32 +1629,22 @@ def add_project(request, slug):
     team = Team.get(slug, request.user)
 
     if request.POST:
-        form = ProjectForm(request.POST)
-        workflow_form = WorkflowForm(request.POST)
+        form = ProjectForm(team, request.POST)
 
-        if form.is_valid() and workflow_form.is_valid():
+        if form.is_valid():
 
             if team.project_set.filter(slug=pan_slugify(form.cleaned_data['name'])).exists():
                 messages.error(request, _(u"There's already a project with this name"))
             else:
-                project = form.save(commit=False)
-                project.team = team
-                project.save()
-
-                if project.workflow_enabled:
-                    workflow = workflow_form.save(commit=False)
-                    workflow.team = team
-                    workflow.project = project
-                    workflow.save()
+                form.save()
 
                 messages.success(request, _(u'Project added.'))
                 return HttpResponseRedirect(
                         reverse('teams:settings_projects', args=[], kwargs={'slug': slug}))
     else:
-        form = ProjectForm()
-        workflow_form = WorkflowForm()
+        form = ProjectForm(team)
 
-    return { 'team': team, 'form': form, 'workflow_form': workflow_form, }
+    return { 'team': team, 'form': form }
 
 @render_to('teams/settings-projects-edit.html')
 @login_required
@@ -1667,40 +1657,24 @@ def edit_project(request, slug, project_slug):
         messages.error(request, _(u'You cannot edit that project.'))
         return HttpResponseRedirect(project_list_url)
 
-    try:
-        workflow = Workflow.objects.get(team=team, project=project)
-    except Workflow.DoesNotExist:
-        workflow = None
-
     if request.POST:
         if request.POST.get('delete', None) == 'Delete':
             project.delete()
             messages.success(request, _(u'Project deleted.'))
             return HttpResponseRedirect(project_list_url)
         else:
-            form = ProjectForm(request.POST, instance=project)
-            workflow_form = WorkflowForm(request.POST, instance=workflow)
+            form = ProjectForm(team, request.POST, instance=project)
 
-            # if the project doesn't have workflow enabled, the workflow form
-            # is going to fail to validate (workflow is None)
-            # there's probably a better way of doing this...
-            if form.is_valid() and workflow_form.is_valid if project.workflow_enabled else form.is_valid():
+            if form.is_valid():
                 form.save()
-
-                if project.workflow_enabled:
-                    workflow = workflow_form.save(commit=False)
-                    workflow.team = team
-                    workflow.project = project
-                    workflow.save()
 
                 messages.success(request, _(u'Project saved.'))
                 return HttpResponseRedirect(project_list_url)
 
     else:
-        form = ProjectForm(instance=project)
-        workflow_form = WorkflowForm(instance=workflow)
+        form = ProjectForm(team, instance=project)
 
-    return { 'team': team, 'project': project, 'form': form, 'workflow_form': workflow_form, }
+    return { 'team': team, 'project': project, 'form': form }
 
 @render_to('teams/_third-party-accounts.html')
 @login_required
