@@ -36,42 +36,4 @@
             <p class="empty">{% trans 'This team does not have any projects yet' %}</p>
         {% endif %}
     </div>
-
-    <script id="IMAGE_PRELOADER" type="text/html">
-        <img class="placeholder" width="256" height="30" src="{{ STATIC_URL }}images/ajax-loader.gif"/>
-    </script>
-
-    <script id="projectEditPanel" type="text/html">
-        <div class="project-edit-panel modal-window-bg">
-            <form action="#">
-                <div class="grid_4 alpha">
-                    <fieldset>
-                        <legend> Change project {{name}}</legend>
-                        <label for="name">Name</label>
-                        <input id="basic_name" type="text" name="name" class="clearfix" value="{{name}}"/>
-
-                        <label for="name">Description</label>
-
-                        <textarea id="basic_description" name="description" class="clearfix" >{{description}}</textarea>
-                        <input type="hidden" value='{{pk}}' name="pk"/>
-                        <input type="hidden" value='{{order}}' name="order"/>
-                        <input type="hidden" value='{{slug}}' name="slug"/>
-                    </fieldset>
-                </div>
-                <div class="grid_4 omega">
-                    <fieldset>
-                        <legend>Workflows</legend>
-                        <p class="notation">Moderate this project's subtitles. Will override the team's workflow if exists.</p>
-                        <label for="workflow_enabled"><input id="basic_workflows_enabled" type="checkbox"  name="workflow_enabled" {{workflow_enabled}}checked="checked"{{workflow_enabled}}/> Enable workflows</label>
-                    </fieldset>
-                </div>
-
-                <div class="grid_9 submit">
-                    <a class="button delete project-delete">Delete</a>
-                    <a class="button cancel project-cancel">Cancel</a>
-                    <a class="button save project-save">Save</a>
-                </div>
-            </form>
-        </div>
-    </script>
 {% endblock %}

@@ -54,26 +54,4 @@
         </form>
 
     </div>
-
-    <script type="text/javascript">
-        $(window).load(function(){
-            $workflow = $('#id_workflow_enabled');
-
-            if ($workflow.attr('checked')) {
-                $('.v1 .workflow').show();
-            }
-
-            $workflow.change(function() {
-                if ($workflow.attr('checked')) {
-                    $('.v1 .workflow').show();
-                } else {
-                    $('.v1 .workflow').hide();
-                }
-            });
-        });
-    </script>
-
-    <script id="IMAGE_PRELOADER" type="text/html">
-        <img class="placeholder" width="256" height="30" src="{{ STATIC_URL }}images/ajax-loader.gif"/>
-    </script>
 {% endblock %}
