@@ -384,27 +384,6 @@ class SubtitleLanguage(models.Model):
     writelock_session_key = models.CharField(max_length=255, blank=True,
                                              editable=False)
 
-    # Denormalized signoff/collaborator count fields.
-    # These are stored here for speed of retrieval and filtering.
-    #
-    # They are updated in the update_signoff_counts() method, which is called
-    # from the Collaborator .save() method.
-    #
-    # I'd really like to reconsider whether we need these when we actually start
-    # using them.  If we can use some SQL magic in a manager to avoid the
-    # denormalized fields but still have speedy queries I'd prefer that to
-    # having to make sure these are properly synced.
-    unofficial_signoff_count = models.PositiveIntegerField(default=0,
-                                                           editable=False)
-    official_signoff_count = models.PositiveIntegerField(default=0,
-                                                         editable=False)
-    pending_signoff_count = models.PositiveIntegerField(default=0,
-                                                        editable=False)
-    pending_signoff_unexpired_count = models.PositiveIntegerField(default=0,
-                                                                  editable=False)
-    pending_signoff_expired_count = models.PositiveIntegerField(default=0,
-                                                                editable=False)
-
     followers = models.ManyToManyField(User, blank=True,
             related_name='new_followed_languages', editable=False)
 
@@ -817,28 +796,6 @@ class SubtitleLanguage(models.Model):
             signals.language_deleted.send(lang)
             from teams.signals import api_language_deleted
             api_language_deleted.send(lang)
-
-    def update_signoff_counts(self):
-        """Update the denormalized signoff count fields and save."""
-
-        cs = self.collaborator_set.all()
-
-        self.official_signoff_count = len(
-            [c for c in cs if c.signoff and c.signoff_is_official])
-
-        self.unofficial_signoff_count = len(
-            [c for c in cs if c.signoff and (not c.signoff_is_official)])
-
-        self.pending_signoff_count = len(
-            [c for c in cs if (not c.signoff)])
-
-        self.pending_signoff_expired_count = len(
-            [c for c in cs if (not c.signoff) and c.expired])
-
-        self.pending_signoff_unexpired_count = len(
-            [c for c in cs if (not c.signoff) and (not c.expired)])
-
-        self.save()
 
     def get_description(self, public=True):
         v = self.get_tip(public=public)
@@ -1827,68 +1784,3 @@ class SubtitleVersionMetadata(models.Model):
             return User.objects.get(pk=int(self.data))
         else:
             return self.data
-
-
-# Collaborators ---------------------------------------------------------------
-class CollaboratorManager(models.Manager):
-    def get_for(self, subtitle_language):
-        return self.get_query_set().filter(subtitle_language=subtitle_language)
-
-    def get_all_signoffs_for(self, subtitle_language):
-        return self.get_for(subtitle_language).filter(signoff=True)
-
-    def get_peer_signoffs_for(self, subtitle_language):
-        return (self.get_all_signoffs_for(subtitle_language)
-                    .filter(signoff_is_official=False))
-
-    def get_official_signoffs_for(self, subtitle_language):
-        return (self.get_all_signoffs_for(subtitle_language)
-                    .filter(signoff_is_official=True))
-
-    def get_unsignedoff_for(self, subtitle_language, include_expired=False):
-        qs = self.get_for(subtitle_language).filter(signoff=False)
-
-        if not include_expired:
-            qs = qs.exclude(expired=True)
-
-        return qs
-
-class Collaborator(models.Model):
-    """Collaborator models represent a user working on a specific language."""
-
-    user = models.ForeignKey(User)
-    subtitle_language = models.ForeignKey(SubtitleLanguage)
-
-    signoff = models.BooleanField(default=False)
-    signoff_is_official = models.BooleanField(default=False)
-    expired = models.BooleanField(default=False)
-
-    expiration_start = models.DateTimeField(editable=False)
-
-    created = models.DateTimeField(editable=False)
-
-    objects = CollaboratorManager()
-
-    class Meta:
-        unique_together = (('user', 'subtitle_language'),)
-
-
-    def save(self, *args, **kwargs):
-        creating = not self.pk
-
-        if creating and not self.created:
-            self.created = datetime.now()
-
-        if creating and not self.expiration_start:
-            self.expiration_start = self.created
-
-        result = super(Collaborator, self).save(*args, **kwargs)
-
-        # Update the denormalized signoff count fields for SubtitleLanguages.
-        # This has to be done after we've saved this Collaborator so the changes
-        # will take effect.
-        self.subtitle_language.update_signoff_counts()
-
-        return result
-
-

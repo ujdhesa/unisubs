@@ -21,7 +21,7 @@
 from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList
 from django.core.urlresolvers import reverse
-from apps.subtitles.models import (get_lineage, Collaborator, SubtitleLanguage,
+from apps.subtitles.models import (get_lineage, SubtitleLanguage,
                                    SubtitleVersion)
 
 
@@ -37,40 +37,12 @@ class SubtitleVersionInline(admin.TabularInline):
 
 class SubtitleLanguageAdmin(admin.ModelAdmin):
     list_display = ['video_title', 'language_code', 'version_count', 'tip',
-                    'unofficial_signoffs',
-                    'official_signoffs',
-                    'pending_collaborators',
-                    'expired_pending_collaborators',
-                    'unexpired_pending_collaborators',
                     'is_forked']
     list_filter = ['created', 'language_code']
 
     inlines = [SubtitleVersionInline]
     search_fields = ['video__title', 'video__video_id', 'language_code']
     raw_id_fields = ['video']
-
-    def unofficial_signoffs(self, o):
-        return o.unofficial_signoff_count
-    unofficial_signoffs.admin_order_field = 'unofficial_signoff_count'
-
-    def official_signoffs(self, o):
-        return o.official_signoff_count
-    official_signoffs.admin_order_field = 'official_signoff_count'
-
-    def pending_collaborators(self, o):
-        return o.pending_signoff_count
-    pending_collaborators.short_description = 'pending'
-    pending_collaborators.admin_order_field = 'pending_signoff_count'
-
-    def expired_pending_collaborators(self, o):
-        return o.pending_signoff_expired_count
-    expired_pending_collaborators.short_description = 'expired pending'
-    expired_pending_collaborators.admin_order_field = 'pending_signoff_expired_count'
-
-    def unexpired_pending_collaborators(self, o):
-        return o.pending_signoff_unexpired_count
-    unexpired_pending_collaborators.short_description = 'unexpired pending'
-    unexpired_pending_collaborators.admin_order_field = 'pending_signoff_unexpired_count'
 
     def video_title(self, sl):
         return sl.video.title_display()
@@ -177,28 +149,5 @@ class SubtitleVersionAdmin(admin.ModelAdmin):
         return response
 
 
-class CollaboratorAdmin(admin.ModelAdmin):
-    list_display = ['display_video', 'display_language', 'user', 'signoff',
-                    'signoff_is_official', 'expired', 'expiration_start']
-    raw_id_fields = ['subtitle_language', 'user']
-    list_filter = ['signoff', 'signoff_is_official', 'expired', 'created']
-    search_fields = ['subtitle_language__video__video_id',
-                     'subtitle_language__video__title',
-                     'subtitle_language__language_code',
-                     'user__username', 'user__email']
-
-    def display_video(self, o):
-        return o.subtitle_language.video.title_display()
-    display_video.short_description = 'video'
-    display_video.admin_order_field = 'subtitle_language__video'
-
-    def display_language(self, o):
-        return o.subtitle_language.get_language_code_display()
-    display_language.short_description = 'language'
-    display_language.admin_order_field = 'subtitle_language__language_code'
-
-
-# -----------------------------------------------------------------------------
 admin.site.register(SubtitleLanguage, SubtitleLanguageAdmin)
 admin.site.register(SubtitleVersion, SubtitleVersionAdmin)
-admin.site.register(Collaborator, CollaboratorAdmin)
