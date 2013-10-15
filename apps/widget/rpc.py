@@ -24,7 +24,7 @@ from django.utils import translation
 from django.utils.translation import ugettext as _
 
 from subtitles import models as new_models
-from teams.models import Task, Workflow, Team, BillingRecord
+from teams.models import Task, TaskWorkflow, Team, BillingRecord
 from teams.moderation_const import APPROVED, UNMODERATED, WAITING_MODERATION
 from teams.permissions import (
     can_create_and_edit_subtitles, can_create_and_edit_translations,
@@ -831,7 +831,7 @@ class Rpc(BaseRpc):
     def _create_review_or_approve_task(self, subtitle_version):
         team_video = subtitle_version.video.get_team_video()
         lang = subtitle_version.subtitle_language.language_code
-        workflow = Workflow.get_for_team_video(team_video)
+        workflow = TaskWorkflow.get_for_team_video(team_video)
 
         if workflow.review_allowed:
             type = Task.TYPE_IDS['Review']

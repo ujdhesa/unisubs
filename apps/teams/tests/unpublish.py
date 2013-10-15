@@ -12,7 +12,7 @@ from utils import test_factories
 class UnpublishTestCase(TestCase):
     def setUp(self):
         self.team = test_factories.create_team(workflow_enabled=True)
-        self.workflow = test_factories.create_workflow(self.team)
+        self.workflow = test_factories.create_tasks_workflow(self.team)
         self.user = test_factories.create_user(is_staff=True)
         self.member = test_factories.create_team_member(self.team, self.user,
                                                         role=ROLE_ADMIN)

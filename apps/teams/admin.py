@@ -24,9 +24,10 @@ from django.utils.translation import ugettext_lazy as _
 
 from messages.forms import TeamAdminPageMessageForm
 from teams.models import (
-    Team, TeamMember, TeamVideo, Workflow, Task, Setting, MembershipNarrowing,
-    Project, TeamLanguagePreference, TeamNotificationSetting, BillingReport,
-    Partner, Application, ApplicationInvalidException, Invite, BillingRecord
+    Team, TeamMember, TeamVideo, TaskWorkflow, Task, Setting,
+    MembershipNarrowing, Project, TeamLanguagePreference,
+    TeamNotificationSetting, BillingReport, Partner, Application,
+    ApplicationInvalidException, Invite, BillingRecord
 )
 from videos.models import SubtitleLanguage
 
@@ -98,11 +99,11 @@ class TeamVideoAdmin(admin.ModelAdmin):
     team_link.short_description = _('Team')
     team_link.allow_tags = True
 
-class WorkflowAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'team', 'project', 'team_video', 'created')
+class TaskWorkflowAdmin(admin.ModelAdmin):
+    list_display = ('__unicode__', 'team', 'created')
     list_filter = ('created', 'modified')
-    search_fields = ('team__name', 'project__name', 'team_video__video__title')
-    raw_id_fields = ('team', 'team_video', 'project')
+    search_fields = ('team__name',)
+    raw_id_fields = ('team',)
     ordering = ('-created',)
 
 class TaskAdmin(admin.ModelAdmin):
@@ -254,7 +255,7 @@ class BillingRecordAdmin(admin.ModelAdmin):
 admin.site.register(TeamMember, TeamMemberAdmin)
 admin.site.register(Team, TeamAdmin)
 admin.site.register(TeamVideo, TeamVideoAdmin)
-admin.site.register(Workflow, WorkflowAdmin)
+admin.site.register(TaskWorkflow, TaskWorkflowAdmin)
 admin.site.register(Task, TaskAdmin)
 admin.site.register(TeamLanguagePreference, TeamLanguagePreferenceAdmin)
 admin.site.register(MembershipNarrowing, MembershipNarrowingAdmin)

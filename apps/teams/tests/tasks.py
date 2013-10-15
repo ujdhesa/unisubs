@@ -32,7 +32,7 @@ class AutoCreateTest(TestCase):
 
     def setUp(self):
         self.team = test_factories.create_team(workflow_enabled=True)
-        w = test_factories.create_workflow(self.team,
+        w = test_factories.create_tasks_workflow(self.team,
                                            autocreate_subtitle=True,
                                            autocreate_translate=True)
         self.admin = test_factories.create_team_member(
@@ -61,7 +61,7 @@ class TranslateTranscribeTestBase(TestCase):
     """Base class for TranscriptionTaskTest and TranslationTaskTest."""
     def setUp(self):
         self.team = test_factories.create_team(workflow_enabled=True)
-        self.workflow = test_factories.create_workflow(
+        self.workflow = test_factories.create_tasks_workflow(
             self.team,
             review_allowed=DONT_REQUIRE_REVIEW,
             approve_allowed=DONT_REQUIRE_APPROVAL)
@@ -611,7 +611,7 @@ class TranslationTaskTest(TranslateTranscribeTestBase):
 class ViewsTest(TestCase):
     def setUp(self):
         self.team = test_factories.create_team(workflow_enabled=True)
-        w = test_factories.create_workflow(self.team,
+        w = test_factories.create_tasks_workflow(self.team,
                                            autocreate_subtitle=True)
         self.admin = test_factories.create_team_member(
             self.team, role=TeamMember.ROLE_ADMIN)

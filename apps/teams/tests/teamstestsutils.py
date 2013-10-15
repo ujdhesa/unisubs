@@ -1,8 +1,6 @@
 from django.core.management import call_command
 
-from apps.teams.models import Team, TeamMember, Workflow
-
-from widget.rpc import Rpc    
+from widget.rpc import Rpc
 
 def refresh_obj(m):
     return m.__class__._default_manager.get(pk=m.pk)

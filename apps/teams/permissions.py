@@ -17,7 +17,8 @@
 # http://www.gnu.org/licenses/agpl-3.0.html.
 
 from django.utils.translation import ugettext as _
-from teams.models import Team, MembershipNarrowing, Workflow, TeamMember, Task
+from teams.models import (Team, MembershipNarrowing, TaskWorkflow, TeamMember,
+                          Task)
 
 from teams.permissions_const import (
     ROLES_ORDER, ROLE_OWNER, ROLE_CONTRIBUTOR, ROLE_ADMIN, ROLE_MANAGER,
@@ -508,7 +509,7 @@ def can_review_own_subtitles(role, team_video):
     return False
 
 def can_review(team_video, user, lang=None, allow_own=False):
-    workflow = Workflow.get_for_team_video(team_video)
+    workflow = TaskWorkflow.get_for_team_video(team_video)
     role = get_role_for_target(user, team_video.team, team_video.project, lang)
 
     if not workflow.review_allowed:
@@ -545,7 +546,7 @@ def can_review(team_video, user, lang=None, allow_own=False):
     return True
 
 def can_approve(team_video, user, lang=None):
-    workflow = Workflow.get_for_team_video(team_video)
+    workflow = TaskWorkflow.get_for_team_video(team_video)
     role = get_role_for_target(user, team_video.team, team_video.project, lang)
 
     if not workflow.approve_allowed:
@@ -607,7 +608,7 @@ def can_publish_edits_immediately(team_video, user, lang):
     lang should be a language code string.
 
     """
-    workflow = Workflow.get_for_team_video(team_video)
+    workflow = TaskWorkflow.get_for_team_video(team_video)
 
     if workflow.approve_allowed:
         return can_approve(team_video, user, lang)
@@ -628,7 +629,7 @@ def can_post_edit_subtitles(team_video, user, lang=None):
     team = team_video.team
 
     if team.workflow_enabled:
-        workflow = Workflow.get_for_team_video(team_video)
+        workflow = TaskWorkflow.get_for_team_video(team_video)
         if workflow.approve_allowed:
             return can_approve(team_video, user, lang=lang)
         elif workflow.review_allowed:
@@ -826,13 +827,13 @@ def can_delete_task(task, user):
 
     # Allow stray review tasks to be deleted.
     if task.type == Task.TYPE_IDS['Review']:
-        workflow = Workflow.get_for_team_video(task.team_video)
+        workflow = TaskWorkflow.get_for_team_video(task.team_video)
         if not workflow.review_allowed:
             return can_delete
 
     # Allow stray approve tasks to be deleted.
     if task.type == Task.TYPE_IDS['Approve']:
-        workflow = Workflow.get_for_team_video(task.team_video)
+        workflow = TaskWorkflow.get_for_team_video(task.team_video)
         if not workflow.approve_allowed:
             return can_delete
 

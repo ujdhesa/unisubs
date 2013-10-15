@@ -17,7 +17,7 @@
 # http://www.gnu.org/licenses/agpl-3.0.html.
 
 from django import template
-from teams.models import Team, TeamVideo, Project, TeamMember, Workflow, Task
+from teams.models import Team, TeamVideo, Project, TeamMember, Task
 from django.db.models import Count
 from videos.models import Video
 from apps.widget import video_cache

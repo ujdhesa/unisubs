@@ -46,9 +46,7 @@ from utils.redis_utils import RedisSimpleField
 from utils.translation import is_rtl
 
 
-ALL_LANGUAGES = sorted([(val, _(name)) for val, name in settings.ALL_LANGUAGES],
-                       key=lambda v: v[1])
-VALID_LANGUAGE_CODES = [unicode(x[0]) for x in ALL_LANGUAGES]
+VALID_LANGUAGE_CODES = set(unicode(x[0]) for x in settings.ALL_LANGUAGES)
 
 WRITELOCK_EXPIRATION = 30 # 30 seconds
 
@@ -362,7 +360,8 @@ class SubtitleLanguage(models.Model):
     """
     # Basic Data
     video = models.ForeignKey(Video, related_name='newsubtitlelanguage_set')
-    language_code = models.CharField(max_length=16, choices=ALL_LANGUAGES)
+    language_code = models.CharField(max_length=16,
+                                     choices=settings.ALL_LANGUAGES)
     created = models.DateTimeField(editable=False)
 
     # Should be True if the latest version for this set of subtitles covers all
@@ -1195,7 +1194,8 @@ class SubtitleVersion(models.Model):
 
     video = models.ForeignKey(Video, related_name='newsubtitleversion_set')
     subtitle_language = models.ForeignKey(SubtitleLanguage)
-    language_code = models.CharField(max_length=16, choices=ALL_LANGUAGES)
+    language_code = models.CharField(max_length=16,
+                                     choices=settings.ALL_LANGUAGES)
 
     # If you just want to *check* the visibility of a version you probably want
     # to use the is_public and is_private methods instead, which handle the

@@ -27,7 +27,7 @@ from apps.subtitles import models as sub_models
 from apps.subtitles.pipeline import add_subtitles
 from apps.teams.forms import InviteForm
 from apps.teams.models import (
-    Team, TeamMember, Application, Workflow, TeamVideo, Task
+    Team, TeamMember, Application, TaskWorkflow, TeamVideo, Task
 )
 from apps.videos.models import Action, Video
 from utils import send_templated_email
@@ -360,7 +360,8 @@ class MessageTest(TestCase):
         # add to a moderated video
         team = Team.objects.create(slug='my-team', name='myteam',
                 workflow_enabled=True)
-        workflow = Workflow(team=team, review_allowed=20,approve_allowed=20)
+        workflow = TaskWorkflow(team=team,
+                                review_allowed=20,approve_allowed=20)
         workflow.save()
 
         tv = TeamVideo(team=team, video=v, added_by=User.objects.all()[2])

@@ -53,9 +53,9 @@ from teams.forms import (
     make_billing_report_form,
 )
 from teams.models import (
-    Team, TeamMember, Invite, Application, TeamVideo, Task, Project, Workflow,
-    Setting, TeamLanguagePreference, InviteExpiredException, BillingReport,
-    ApplicationInvalidException
+    Team, TeamMember, Invite, Application, TeamVideo, Task, Project,
+    TaskWorkflow, Setting, TeamLanguagePreference, InviteExpiredException,
+    BillingReport, ApplicationInvalidException
 )
 from teams.permissions import (
     can_add_video, can_assign_role, can_assign_tasks, can_create_task_subtitle,
@@ -281,7 +281,13 @@ def settings_guidelines(request, team):
 @render_to('teams/settings-permissions.html')
 @settings_page
 def settings_permissions(request, team):
-    workflow = team.get_workflow()
+    # get the TaskWorkflow object associated with the team.  Don't use
+    # team.get_workflow(), since this will not work if there is a workflow in
+    # the DB, but workflow_style != WORKFLOW_TASKS
+    try:
+        workflow = TaskWorkflow.objects.get(team=team)
+    except TaskWorkflow.DoesNotExist:
+        workflow = TaskWorkflow(team=team)
     moderated = team.moderates_videos()
 
     if request.POST:
@@ -291,7 +297,7 @@ def settings_permissions(request, team):
         if form.is_valid() and workflow_form.is_valid():
             form.save()
 
-            if form.cleaned_data['workflow_enabled']:
+            if form.tasks_enabled():
                 workflow_form.save()
 
             moderation_changed = moderated != form.instance.moderates_videos()
@@ -528,7 +534,7 @@ def detail(request, slug, project_slug=None, languages=None):
     extra_context.update(pagination_info)
     extra_context['team_video_md_list'] = team_video_md_list
     extra_context['team_workflows'] = list(
-        Workflow.objects.filter(team=team.id)
+        TaskWorkflow.objects.filter(team=team.id)
                         .select_related('project', 'team', 'team_video'))
 
     if not filtered and not query:
@@ -1064,9 +1070,10 @@ def role_saved(request, slug):
 # Tasks
 def _get_or_create_workflow(team_slug, project_id, team_video_id):
     try:
-        workflow = Workflow.objects.get(team__slug=team_slug, project=project_id,
-                                        team_video=team_video_id)
-    except Workflow.DoesNotExist:
+        workflow = TaskWorkflow.objects.get(team__slug=team_slug,
+                                            project=project_id,
+                                            team_video=team_video_id)
+    except TaskWorkflow.DoesNotExist:
         # We special case this because Django won't let us create new models
         # with the IDs, we need to actually pass in the Model objects for
         # the ForeignKey fields.
@@ -1077,7 +1084,8 @@ def _get_or_create_workflow(team_slug, project_id, team_video_id):
         project = Project.objects.get(pk=project_id) if project_id else None
         team_video = TeamVideo.objects.get(pk=team_video_id) if team_video_id else None
 
-        workflow = Workflow(team=team, project=project, team_video=team_video)
+        workflow = TaskWorkflow(team=team, project=project,
+                                team_video=team_video)
 
     return workflow
 
@@ -1807,7 +1815,7 @@ def _ensure_trans_task(team_video, subtitle_language):
 
     # If we've reached this point, we know there are no existing tasks for this
     # language.  We may need to create one.
-    workflow = Workflow.get_for_team_video(team_video)
+    workflow = TaskWorkflow.get_for_team_video(team_video)
     video = team_video.video
     preferred_langs = (
         TeamLanguagePreference.objects.get_preferred(team_video.team))
@@ -1897,7 +1905,7 @@ def _ensure_task_exists(team_video, subtitle_language):
         task.save()
     else:
         # There are no tasks, so we need to create a review/approve task.
-        workflow = Workflow.get_for_team_video(team_video)
+        workflow = TaskWorkflow.get_for_team_video(team_video)
 
         if workflow.review_enabled or workflow.approve_enabled:
             # We'll prefer approve to review if it's available.

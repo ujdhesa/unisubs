@@ -27,7 +27,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from apps.subtitles.forms import SubtitlesUploadForm
 from apps.teams.models import (
-    Team, TeamMember, TeamVideo, Task, Project, Workflow, Invite, BillingReport
+    Team, TeamMember, TeamVideo, Task, Project, TaskWorkflow, Invite,
+    BillingReport
 )
 from apps.teams.permissions import (
     roles_user_can_invite, can_delete_task, can_add_video, can_perform_task,
@@ -475,16 +476,33 @@ class SettingsForm(forms.ModelForm):
 
 class WorkflowForm(forms.ModelForm):
     class Meta:
-        model = Workflow
+        model = TaskWorkflow
         fields = ('autocreate_subtitle', 'autocreate_translate',
                   'review_allowed', 'approve_allowed')
 
+class _PermissionsFormWorkflowStyleWidget(forms.CheckboxInput):
+    # For the permssions form, we use a checkbox to toggle between
+    # WORKFLOW_NONE and WORKFLOW_TASKS
+    def value_from_datadict(self, data, files, name):
+        if forms.CheckboxInput.value_from_datadict(self, data, files, name):
+            return Team.WORKFLOW_TASKS
+        else:
+            return Team.WORKFLOW_NONE
+
 class PermissionsForm(forms.ModelForm):
+
     class Meta:
         model = Team
         fields = ('membership_policy', 'video_policy', 'subtitle_policy',
-                  'translate_policy', 'task_assign_policy', 'workflow_enabled',
+                  'translate_policy', 'task_assign_policy', 'workflow_style',
                   'max_tasks_per_member', 'task_expiration',)
+
+        widgets = {
+            'workflow_style': _PermissionsFormWorkflowStyleWidget,
+        }
+
+    def tasks_enabled(self):
+        return self.cleaned_data['workflow_style'] == Team.WORKFLOW_TASKS
 
 class LanguagesForm(forms.Form):
     preferred = forms.MultipleChoiceField(required=False, choices=())

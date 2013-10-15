@@ -19,7 +19,7 @@
 import datetime
 from django.test import TestCase
 from django.core.urlresolvers import reverse
-from apps.teams.models import Team, TeamVideo, TeamMember, Workflow, Task
+from apps.teams.models import Team, TeamVideo, TeamMember, TaskWorkflow, Task
 from auth.models import CustomUser as User
 from contextlib import contextmanager
 from apps.testhelpers import views as helpers
@@ -498,7 +498,7 @@ class TestRules(BaseTestPermission):
 
     def test_can_review(self):
         user, outsider = self.user, self.outsider
-        workflow = Workflow.get_for_team_video(self.nonproject_video)
+        workflow = TaskWorkflow.get_for_team_video(self.nonproject_video)
 
         self.team.workflow_enabled = True
         self.team.save()
@@ -506,7 +506,7 @@ class TestRules(BaseTestPermission):
         # TODO: Test with Project/video-specific workflows.
 
         # Review disabled.
-        workflow.review_allowed = Workflow.REVIEW_IDS["Don't require review"]
+        workflow.review_allowed = TaskWorkflow.REVIEW_IDS["Don't require review"]
         workflow.save()
         self.clear_cached_workflows()
 
@@ -517,7 +517,7 @@ class TestRules(BaseTestPermission):
         self.assertFalse(can_review(self.nonproject_video, outsider))
 
         # Peer reviewing.
-        workflow.review_allowed = Workflow.REVIEW_IDS["Peer must review"]
+        workflow.review_allowed = TaskWorkflow.REVIEW_IDS["Peer must review"]
         workflow.save()
         self.clear_cached_workflows()
 
@@ -528,7 +528,7 @@ class TestRules(BaseTestPermission):
         self.assertFalse(can_review(self.nonproject_video, outsider))
 
         # Manager review.
-        workflow.review_allowed = Workflow.REVIEW_IDS["Manager must review"]
+        workflow.review_allowed = TaskWorkflow.REVIEW_IDS["Manager must review"]
         workflow.save()
         self.clear_cached_workflows()
 
@@ -548,7 +548,7 @@ class TestRules(BaseTestPermission):
         self.assertFalse(can_review(self.nonproject_video, outsider))
 
         # Admin review.
-        workflow.review_allowed = Workflow.REVIEW_IDS["Admin must review"]
+        workflow.review_allowed = TaskWorkflow.REVIEW_IDS["Admin must review"]
         workflow.save()
         self.clear_cached_workflows()
 
@@ -584,12 +584,12 @@ class TestRules(BaseTestPermission):
         self.team.workflow_enabled = True
         self.team.save()
 
-        workflow = Workflow.get_for_team_video(self.nonproject_video)
+        workflow = TaskWorkflow.get_for_team_video(self.nonproject_video)
 
         # TODO: Test with Project/video-specific workflows.
 
         # Approval disabled.
-        workflow.approve_allowed = Workflow.APPROVE_IDS["Don't require approval"]
+        workflow.approve_allowed = TaskWorkflow.APPROVE_IDS["Don't require approval"]
         workflow.save()
         self.clear_cached_workflows()
 
@@ -600,7 +600,7 @@ class TestRules(BaseTestPermission):
         self.assertFalse(can_approve(self.nonproject_video, outsider))
 
         # Manager approval.
-        workflow.approve_allowed = Workflow.APPROVE_IDS["Manager must approve"]
+        workflow.approve_allowed = TaskWorkflow.APPROVE_IDS["Manager must approve"]
         workflow.save()
         self.clear_cached_workflows()
 
@@ -620,7 +620,7 @@ class TestRules(BaseTestPermission):
         self.assertFalse(can_approve(self.nonproject_video, outsider))
 
         # Admin approval.
-        workflow.approve_allowed = Workflow.APPROVE_IDS["Admin must approve"]
+        workflow.approve_allowed = TaskWorkflow.APPROVE_IDS["Admin must approve"]
         workflow.save()
         self.clear_cached_workflows()
 
@@ -1074,31 +1074,31 @@ class CanPostEditSubtitlesTest(RolePermissionsTest):
         self.update_team(workflow_enabled=True)
         # If approval is enabled, then users who can approve can post edit
         self.update_workflow(
-            review_allowed=Workflow.REVIEW_IDS["Manager must review"],
-            approve_allowed=Workflow.APPROVE_IDS["Admin must approve"],
+            review_allowed=TaskWorkflow.REVIEW_IDS["Manager must review"],
+            approve_allowed=TaskWorkflow.APPROVE_IDS["Admin must approve"],
         )
         self.check_role_required(ROLE_ADMIN)
         self.update_workflow(
-            approve_allowed=Workflow.APPROVE_IDS["Manager must approve"],
+            approve_allowed=TaskWorkflow.APPROVE_IDS["Manager must approve"],
         )
         self.check_role_required(ROLE_MANAGER)
         # If approval is disabled, then users who can review can post edit
         self.update_workflow(
-            review_allowed=Workflow.REVIEW_IDS["Admin must review"],
-            approve_allowed=Workflow.APPROVE_IDS["Don't require approval"]
+            review_allowed=TaskWorkflow.REVIEW_IDS["Admin must review"],
+            approve_allowed=TaskWorkflow.APPROVE_IDS["Don't require approval"]
         )
         self.check_role_required(ROLE_ADMIN)
         self.update_workflow(
-            review_allowed=Workflow.REVIEW_IDS["Manager must review"],
+            review_allowed=TaskWorkflow.REVIEW_IDS["Manager must review"],
         )
         self.check_role_required(ROLE_MANAGER)
         self.update_workflow(
-            review_allowed=Workflow.REVIEW_IDS["Peer must review"]
+            review_allowed=TaskWorkflow.REVIEW_IDS["Peer must review"]
         )
         self.check_role_required(ROLE_CONTRIBUTOR)
         # If neither is enabled, then team members can post edit
         self.update_workflow(
-            review_allowed=Workflow.REVIEW_IDS["Don't require review"]
+            review_allowed=TaskWorkflow.REVIEW_IDS["Don't require review"]
         )
         self.check_role_required(ROLE_CONTRIBUTOR)
         # if workflows are disabled, but we fall back to the subtitle policy

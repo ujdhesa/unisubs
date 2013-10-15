@@ -26,7 +26,7 @@ from django.contrib.auth.hashers import make_password
 
 from apps.auth.models import CustomUser as User
 from apps.teams.models import (Project, Team, Task, TeamMember, TeamVideo,
-                               Workflow)
+                               TaskWorkflow)
 from apps.videos.types import video_type_registrar
 from apps.videos.models import Video, VideoUrl
 from apps.videos.models import SubtitleVersion as OldSubtitleVersion
@@ -82,13 +82,13 @@ def create_team(**kwargs):
     defaults.update(kwargs)
     return Team.objects.create(**defaults)
 
-def create_workflow(team, **kwargs):
+def create_tasks_workflow(team, **kwargs):
     defaults = {
         'review_allowed': 30, # ADMIN_MUST_REVIEW
         'approve_allowed': 20 # ADMIN_MUST_APPROVE
     }
     defaults.update(kwargs)
-    return Workflow.objects.create(team=team, **defaults)
+    return TaskWorkflow.objects.create(team=team, **defaults)
 
 def create_team_video(team=None, added_by=None, video=None, **kwargs):
     if team is None:

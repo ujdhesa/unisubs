@@ -23,7 +23,7 @@ from apps.auth.models import CustomUser as User
 from apps.videos.models import Video
 from apps.subtitles import pipeline
 from apps.subtitles.models import SubtitleLanguage
-from apps.teams.models import Team, TeamMember, TeamVideo, Workflow
+from apps.teams.models import Team, TeamMember, TeamVideo, TaskWorkflow
 from teams.permissions_const import (
     ROLE_OWNER, ROLE_ADMIN, ROLE_MANAGER, ROLE_CONTRIBUTOR
 )
@@ -129,8 +129,8 @@ def get_team(n=1, reviewers='', approvers=''):
             review = {'peer': 10, 'manager': 20, 'admin': 30}.get(reviewers, 00)
             approve = {'manager': 10, 'admin': 20}.get(approvers, 00)
 
-            Workflow.objects.create(team=team, review_allowed=review,
-                                    approve_allowed=approve)
+            TaskWorkflow.objects.create(team=team, review_allowed=review,
+                                        approve_allowed=approve)
 
             team.workflow_enabled = True
             team.save()

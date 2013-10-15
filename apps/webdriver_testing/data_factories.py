@@ -12,7 +12,7 @@ from apps.teams.models import Invite
 from apps.teams.models import Application
 from apps.teams.models import Project
 from apps.teams.models import TeamLanguagePreference
-from apps.teams.models import Workflow 
+from apps.teams.models import TaskWorkflow 
 from apps.teams.models import BillingReport
 from apps.auth.models import CustomUser as User
 from apps.auth.models import UserLanguage
@@ -120,7 +120,7 @@ class TeamLangPrefFactory(factory.django.DjangoModelFactory):
     team = factory.SubFactory(TeamFactory)
 
 class WorkflowFactory(factory.django.DjangoModelFactory):
-    FACTORY_FOR = Workflow
+    FACTORY_FOR = TaskWorkflow
     
 class TaskFactory(factory.django.DjangoModelFactory):
     FACTORY_FOR = Task 

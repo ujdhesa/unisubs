@@ -812,7 +812,7 @@ var Site = function(Site) {
 
         },
         team_settings_permissions: function() {
-            $workflow = $('#id_workflow_enabled');
+            $workflow = $('#id_workflow_style');
 
             // Fields to watch
             $subperm = $('#id_subtitle_policy');

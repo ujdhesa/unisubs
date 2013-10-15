@@ -1448,10 +1448,10 @@ class PartnerTest(TestCase):
     def test_approved(self):
         # TODO: Closing this up to unblock a merge
         return
-        from apps.teams.models import Workflow, BillingReport
+        from apps.teams.models import TaskWorkflow, BillingReport
         # from apps.teams.moderation_const import APPROVED
 
-        self.assertEquals(0, Workflow.objects.count())
+        self.assertEquals(0, TaskWorkflow.objects.count())
 
         team = test_factories.create_team(workflow_enabled=True)
         user = test_factories.create_user()
@@ -1459,9 +1459,9 @@ class PartnerTest(TestCase):
         video = test_factories.create_video()
         test_factories.create_team_video(team, user, video)
 
-        Workflow.objects.create(team=team, approve_allowed=20)
+        TaskWorkflow.objects.create(team=team, approve_allowed=20)
 
-        self.assertEquals(1, Workflow.objects.count())
+        self.assertEquals(1, TaskWorkflow.objects.count())
         self.assertTrue(team.get_workflow().approve_enabled)
 
         language = SubtitleLanguage.objects.create(video=video, language="en")

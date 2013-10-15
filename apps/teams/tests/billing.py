@@ -222,7 +222,7 @@ class ApprovalTestBase(TestCase):
 
     def setup_team(self):
         self.team = test_factories.create_team(workflow_enabled=True)
-        test_factories.create_workflow(
+        test_factories.create_tasks_workflow(
             self.team,
             review_allowed=20, # manager must review
             approve_allowed=20, # admin must approve
@@ -467,7 +467,7 @@ class SimpleApprovalTestCase(TestCase):
         self.date_maker = DateMaker()
         mock_now.side_effect = self.date_maker.next_date
         self.team = test_factories.create_team(workflow_enabled=True)
-        test_factories.create_workflow(
+        test_factories.create_tasks_workflow(
             self.team,
             review_allowed=0, # no review
             approve_allowed=20, # admin must approve
