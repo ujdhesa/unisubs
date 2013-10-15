@@ -293,7 +293,12 @@ class Team(models.Model):
         TODO: Refactor this behaviour into something less confusing.
 
         """
-        return Workflow.get_for_target(self.id, 'team')
+        if self.workflow_enabled:
+            try:
+                return Workflow.objects.get(team=self)
+            except Workflow.DoesNotExist:
+                pass
+        return Workflow(team=self)
 
     @property
     def auth_provider(self):
@@ -1356,10 +1361,7 @@ class Workflow(models.Model):
     APPROVE_NAMES = dict(APPROVE_CHOICES)
     APPROVE_IDS = dict([choice[::-1] for choice in APPROVE_CHOICES])
 
-    team = models.ForeignKey(Team)
-
-    project = models.ForeignKey(Project, blank=True, null=True)
-    team_video = models.ForeignKey(TeamVideo, blank=True, null=True)
+    team = models.ForeignKey(Team, unique=True)
 
     autocreate_subtitle = models.BooleanField(default=False)
     autocreate_translate = models.BooleanField(default=False)
@@ -1373,78 +1375,9 @@ class Workflow(models.Model):
     created = models.DateTimeField(auto_now_add=True, editable=False)
     modified = models.DateTimeField(auto_now=True, editable=False)
 
-    class Meta:
-        unique_together = ('team', 'project', 'team_video')
-
-
     @classmethod
-    def _get_target_team(cls, id, type):
-        """Return the team for the given target.
-
-        The target is identified by id (its PK as an integer) and type (a string
-        of 'team_video', 'project', or 'team').
-
-        """
-        if type == 'team_video':
-            return TeamVideo.objects.select_related('team').get(pk=id).team
-        elif type == 'project':
-            return Project.objects.select_related('team').get(pk=id).team
-        else:
-            return Team.objects.get(pk=id)
-
-    @classmethod
-    def get_for_target(cls, id, type, workflows=None):
-        '''Return the most specific Workflow for the given target.
-
-        If target object does not exist, None is returned.
-
-        If workflows is given, it should be a QS or List of all Workflows for
-        the TeamVideo's team.  This will let you look it up yourself once and
-        use it in many of these calls to avoid hitting the DB each time.
-
-        If workflows is not given it will be looked up with one DB query.
-
-        '''
-        if not workflows:
-            team = Workflow._get_target_team(id, type)
-            workflows = list(Workflow.objects.filter(team=team.id)
-                                             .select_related('project', 'team',
-                                                             'team_video'))
-        else:
-            team = workflows[0].team
-
-        default_workflow = Workflow(team=team)
-
-        if not workflows:
-            return default_workflow
-
-        if type == 'team_video':
-            try:
-                return [w for w in workflows
-                        if w.team_video and w.team_video.id == id][0]
-            except IndexError:
-                # If there's no video-specific workflow for this video, there
-                # might be a workflow for its project, so we'll start looking
-                # for that instead.
-                team_video = TeamVideo.objects.get(pk=id)
-                id, type = team_video.project_id, 'project'
-
-        if not team.workflow_enabled:
-            return default_workflow
-
-        return [w for w in workflows
-                if (not w.project) and (not w.team_video)][0]
-
-
-    @classmethod
-    def get_for_team_video(cls, team_video, workflows=None):
-        '''Return the most specific Workflow for the given team_video.
-
-        If workflows is given, it should be a QuerySet or List of all Workflows
-        for the TeamVideo's team.  This will let you look it up yourself once
-        and use it in many of these calls to avoid hitting the DB each time.
-
-        If workflows is not given it will be looked up with one DB query.
+    def get_for_team_video(cls, team_video):
+        '''Return the Workflow for the given team_video.
 
         NOTE: This function caches the workflow for performance reasons.  If the
         workflow changes within the space of a single request that
@@ -1452,39 +1385,11 @@ class Workflow(models.Model):
 
         '''
         if not hasattr(team_video, '_cached_workflow'):
-            team_video._cached_workflow = Workflow.get_for_target(
-                    team_video.id, 'team_video', workflows)
+            team_video._cached_workflow = team_video.team.get_workflow()
         return team_video._cached_workflow
 
-    @classmethod
-    def add_to_team_videos(cls, team_videos):
-        '''Add the appropriate Workflow objects to each TeamVideo as .workflow.
-
-        This will only perform one DB query, and it will add the most specific
-        workflow possible to each TeamVideo.
-
-        This only exists for performance reasons.
-
-        '''
-        if not team_videos:
-            return []
-
-        workflows = list(Workflow.objects.filter(team=team_videos[0].team))
-
-        for tv in team_videos:
-            tv.workflow = Workflow.get_for_team_video(tv, workflows)
-
-
-    def get_specific_target(self):
-        """Return the most specific target that this workflow applies to."""
-        return self.team_video or self.project or self.team
-
-
     def __unicode__(self):
-        target = self.get_specific_target()
-        return u'Workflow %s for %s (%s %d)' % (
-                self.pk, target, target.__class__.__name__, target.pk)
-
+        return u'Workflow for %s' % (self.team)
 
     # Convenience functions for checking if a step of the workflow is enabled.
     @property
