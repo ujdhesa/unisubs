@@ -41,6 +41,7 @@ from apps.videos.models import (
 )
 from apps.videos.search_indexes import VideoIndex
 from apps.videos.tasks import import_videos_from_feed
+from teams import workflow
 from utils.forms import ErrorableModelForm
 from utils.forms.unisub_video_form import UniSubBoundVideoField
 from utils.translation import get_language_choices
@@ -482,12 +483,12 @@ class WorkflowForm(forms.ModelForm):
 
 class _PermissionsFormWorkflowStyleWidget(forms.CheckboxInput):
     # For the permssions form, we use a checkbox to toggle between
-    # WORKFLOW_NONE and WORKFLOW_TASKS
+    # WORKFLOW_DEFAULT and WORKFLOW_TASKS
     def value_from_datadict(self, data, files, name):
         if forms.CheckboxInput.value_from_datadict(self, data, files, name):
-            return Team.WORKFLOW_TASKS
+            return workflow.WORKFLOW_TASKS
         else:
-            return Team.WORKFLOW_NONE
+            return workflow.WORKFLOW_DEFAULT
 
 class PermissionsForm(forms.ModelForm):
 
@@ -502,7 +503,85 @@ class PermissionsForm(forms.ModelForm):
         }
 
     def tasks_enabled(self):
-        return self.cleaned_data['workflow_style'] == Team.WORKFLOW_TASKS
+        return self.cleaned_data['workflow_style'] == workflow.WORKFLOW_TASKS
+
+class CollaborationWorkflowForm(forms.Form):
+    """Workflow settings when the workflow style set to collaboration.
+
+    This form is basically a ModelForm, but it combines fields for Team and
+    CollaborationWorkflow, so using ModelForm isn't that helpful.
+    """
+    membership_policy = forms.ChoiceField(
+        choices=Team.MEMBERSHIP_POLICY_CHOICES,
+        initial=Team.OPEN)
+    video_policy = forms.ChoiceField(
+        choices=Team.VIDEO_POLICY_CHOICES,
+        initial=Team.VP_MEMBER)
+    completion_policy = forms.ChoiceField(
+        choices=workflow.CollaborationWorkflow.COMPLETION_POLICY_CHOICES,
+        initial=workflow.CollaborationWorkflow.COMPLETION_ANYONE)
+
+    on_complete_publish_latest = forms.BooleanField(initial=False,
+                                                    required=False)
+    on_complete_publish_all = forms.BooleanField(initial=False,
+                                                 required=False)
+    on_complete_notify_managers = forms.BooleanField(initial=False,
+                                                     required=False)
+    only_1_subtitler = forms.BooleanField(initial=True, required=False)
+    only_1_reviewer = forms.BooleanField(initial=True, required=False)
+    only_1_approver = forms.BooleanField(initial=True, required=False)
+    limit_open_tasks = forms.ChoiceField(initial=0, choices=(
+        (0, _('Unlimited')),) + tuple((i, i) for i in xrange(1, 11)))
+
+    TEAM_FIELDS = [
+        'membership_policy',
+        'video_policy',
+    ]
+
+    WORKFLOW_REGULAR_FIELDS = [
+        'completion_policy',
+        'limit_open_tasks',
+    ]
+
+    WORKFLOW_BOOLEAN_FIELDS = [
+        'on_complete_publish_latest',
+        'on_complete_publish_all',
+        'on_complete_notify_managers',
+        'only_1_subtitler',
+        'only_1_reviewer',
+        'only_1_approver',
+    ]
+
+    def __init__(self, team=None, data=None):
+        self.team = team
+        try:
+            self.workflow = workflow.CollaborationWorkflow.objects.get(
+                team=self.team)
+        except workflow.CollaborationWorkflow.DoesNotExist:
+            self.workflow = workflow.CollaborationWorkflow(team=self.team)
+        if data and data.get('limit_open_tasks', '') == '':
+            data['limit_open_tasks'] = '0'
+        forms.Form.__init__(self, data=data)
+        self.setup_initial_values()
+
+    def setup_initial_values(self):
+        for field in self.TEAM_FIELDS:
+            self.fields[field].initial = getattr(self.team, field)
+
+        for field in (self.WORKFLOW_REGULAR_FIELDS +
+                      self.WORKFLOW_BOOLEAN_FIELDS):
+            self.fields[field].initial = getattr(self.workflow, field)
+
+    def save(self):
+        for field in self.TEAM_FIELDS:
+            setattr(self.team, field, self.cleaned_data[field])
+        self.team.save()
+
+        for field in self.WORKFLOW_REGULAR_FIELDS:
+            setattr(self.workflow, field, self.cleaned_data[field])
+        for field in self.WORKFLOW_BOOLEAN_FIELDS:
+            setattr(self.workflow, field, bool(self.cleaned_data[field]))
+        self.workflow.save()
 
 class LanguagesForm(forms.Form):
     preferred = forms.MultipleChoiceField(required=False, choices=())

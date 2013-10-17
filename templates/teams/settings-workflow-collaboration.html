@@ -1,0 +1,86 @@
+{% extends "teams/base.html" %}
+{% load i18n teams_tags paginator media_compressor %}
+
+{% block title %}
+    {{ team }} {% trans 'Settings' %} | Amara
+{% endblock %}
+
+{% block html_attrs %}id="team_settings_permissions"{% endblock %}
+
+{% block view_content %}
+
+    <div class="view grid_8 omega">
+        {% with 'settings' as current %}
+            {% include 'teams/_tabs.html' %}
+        {% endwith %}
+
+         <div class="tools subnav">
+            {% with 'permissions' as current_sub %}
+                {% include 'teams/_subnav_settings.html' %}
+            {% endwith %}
+        </div>
+        
+        <form class="permissions settings" action="" method="POST">
+            {% csrf_token %}
+
+            <fieldset>
+                <legend>{% trans 'Team Management' %}</legend>
+                <label for="id_membership_policy">{% trans 'How can users join your team?' %}</label>
+                {{ form.membership_policy }}
+
+                <label for="id_video_policy">{% trans 'Who can add/remove videos?' %}</label>
+                {{ form.video_policy }}
+            </fieldset>
+
+            <fieldset>
+                <legend>{% trans 'Endorsement Required' %}</legend>
+
+                <label for="id_membership_policy">{% trans 'Subtitling work is complete once:' %}</label>
+                {{ form.completion_policy }}
+            </fieldset>
+
+            <fieldset>
+                <legend>{% trans 'After Subtitling Work is Complete (check any number):' %}</legend>
+
+                <label>
+                    {{ form.on_complete_publish_latest }}
+                    {% trans 'Publish latest version' %}
+                </label>
+                <label>
+                    {{ form.on_complete_publish_all }}
+                    {% trans 'Publish all version' %}
+                </label>
+                <label>
+                    {{ form.on_complete_notify_managers }}
+                    {% trans 'Notify team managers' %}
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>{% trans 'Work Limits' %}</legend>
+
+                <label>
+                    {{ form.only_1_subtitler }}
+                    {% trans 'Only allow 1 subtitler' %}
+                </label>
+                <label>
+                    {{ form.only_1_reviewer }}
+                    {% trans 'Only allow 1 reviewer' %}
+                </label>
+                <label>
+                    {{ form.only_1_approver }}
+                    {% trans 'Only allow 1 approver' %}
+                </label>
+                <label>
+                    {% trans 'Limit number of open subtitling tasks to:' %}
+                    {{ form.limit_open_tasks }}
+                </label>
+            </fieldset>
+
+            <div class="submit">
+                <input type="submit" class="submit save" value="{% trans 'Save Changes' %}" name="save" />
+            </div>
+        </form>
+    </div>
+{% endblock %}
+

@@ -53,8 +53,19 @@ from videos.models import VideoUrl
 
 VALID_LANGUAGE_CODES = set(code for code, label in settings.ALL_LANGUAGES)
 
-# Workflows
+WORKFLOW_DEFAULT = "D"
+WORKFLOW_TASKS = "T"
+WORKFLOW_COLLABORATION = "C"
+
+WORKFLOW_CHOICES = (
+    (WORKFLOW_DEFAULT, "None"),
+    (WORKFLOW_TASKS, "Tasks"),
+    (WORKFLOW_COLLABORATION, "Collaboration"),
+)
+
 class TaskWorkflow(models.Model):
+    """Workflow for teams that use tasks."""
+
     REVIEW_CHOICES = (
         (00, "Don't require review"),
         (10, 'Peer must review'),
@@ -130,8 +141,6 @@ class TaskWorkflow(models.Model):
         return (self.requires_review_or_approval or self.autocreate_subtitle
                 or self.autocreate_translate)
 
-
-# Tasks
 class TaskManager(models.Manager):
     def not_deleted(self):
         """Return a QS of tasks that are not deleted."""
@@ -848,3 +857,52 @@ class Task(models.Model):
             tasks.update_one_team_video.delay(self.team_video.pk)
 
         return result
+
+class CollaborationWorkflow(models.Model):
+    """Workflow for teams that use the collaboration model."""
+    team = models.ForeignKey('Team', unique=True)
+
+    COMPLETION_ANYONE = "A"
+    COMPLETION_REVIEWER = "R"
+    COMPLETION_APPROVER = "P"
+    COMPLETION_POLICY_CHOICES = (
+        (COMPLETION_ANYONE, 'Anyone'),
+        (COMPLETION_REVIEWER, 'Reviewer'),
+        (COMPLETION_APPROVER, 'Approver'),
+    )
+
+    completion_policy = models.CharField(max_length=1,
+                                         default=COMPLETION_ANYONE,
+                                         choices=COMPLETION_POLICY_CHOICES)
+    on_complete_publish_latest = models.BooleanField(default=False)
+    on_complete_publish_all = models.BooleanField(default=False)
+    on_complete_notify_managers = models.BooleanField(default=False)
+    only_1_subtitler = models.BooleanField(default=True)
+    only_1_reviewer = models.BooleanField(default=True)
+    only_1_approver = models.BooleanField(default=True)
+    limit_open_tasks = models.IntegerField(default=0)
+
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+    modified = models.DateTimeField(auto_now=True, editable=False)
+
+class DefaultWorkflow(object):
+    """Workflow for teams that use the default model.
+
+    Unlike TaskWorkflow or CollaborationWorkflow, DefaultWorkflow is a plain
+    python object, not a django model.
+    """
+    pass
+
+def get_team_workflow(team):
+    """Get a workflow object for a team.
+
+    This function is used by the Team.workflow property.
+    """
+    if team.workflow_style == WORKFLOW_TASKS:
+        return TaskWorkflow(team)
+    elif team.workflow_style == WORKFLOW_COLLABORATION:
+        return CollaborationWorkflow(team)
+    elif team.workflow_style == WORKFLOW_DEFAULT:
+        return DefaultWorkflow(team)
+    else:
+        raise ValueError("Unknown workflow_style: %s" % team.workflow_style)

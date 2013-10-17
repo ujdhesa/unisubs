@@ -10,7 +10,7 @@
     </li>
 
     <li {% if current_sub == "permissions" %}class="current"{% endif %}>
-        <a href="{% url teams:settings_permissions slug=team.slug %}">{% trans "Workflows" %}</a>
+        <a href="{% url teams:settings_workflow slug=team.slug %}">{% trans "Workflows" %}</a>
     </li>
 
     <li {% if current_sub == "languages" %}class="current"{% endif %}>

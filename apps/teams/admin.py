@@ -24,8 +24,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from messages.forms import TeamAdminPageMessageForm
 from teams.models import (
-    Team, TeamMember, TeamVideo, TaskWorkflow, Task, Setting,
-    MembershipNarrowing, Project, TeamLanguagePreference,
+    Team, TeamMember, TeamVideo, TaskWorkflow, CollaborationWorkflow, Task,
+    Setting, MembershipNarrowing, Project, TeamLanguagePreference,
     TeamNotificationSetting, BillingReport, Partner, Application,
     ApplicationInvalidException, Invite, BillingRecord
 )
@@ -39,7 +39,8 @@ class TeamMemberInline(admin.TabularInline):
 class TeamAdmin(admin.ModelAdmin):
     search_fields = ('name'),
     list_display = ('name', 'membership_policy', 'video_policy', 'is_visible',
-            'highlight', 'last_notification_time', 'thumbnail', 'partner')
+                    'workflow_style', 'highlight', 'last_notification_time',
+                    'thumbnail', 'partner')
     list_filter = ('highlight', 'is_visible')
     actions = ['highlight', 'unhighlight', 'send_message']
     raw_id_fields = ['video', 'users', 'videos', 'applicants']
@@ -101,6 +102,13 @@ class TeamVideoAdmin(admin.ModelAdmin):
 
 class TaskWorkflowAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'team', 'created')
+    list_filter = ('created', 'modified')
+    search_fields = ('team__name',)
+    raw_id_fields = ('team',)
+    ordering = ('-created',)
+
+class CollaborationWorkflowAdmin(admin.ModelAdmin):
+    list_display = ('team', 'created')
     list_filter = ('created', 'modified')
     search_fields = ('team__name',)
     raw_id_fields = ('team',)
@@ -256,6 +264,7 @@ admin.site.register(TeamMember, TeamMemberAdmin)
 admin.site.register(Team, TeamAdmin)
 admin.site.register(TeamVideo, TeamVideoAdmin)
 admin.site.register(TaskWorkflow, TaskWorkflowAdmin)
+admin.site.register(CollaborationWorkflow, CollaborationWorkflowAdmin)
 admin.site.register(Task, TaskAdmin)
 admin.site.register(TeamLanguagePreference, TeamLanguagePreferenceAdmin)
 admin.site.register(MembershipNarrowing, MembershipNarrowingAdmin)

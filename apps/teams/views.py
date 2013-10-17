@@ -47,10 +47,10 @@ from accountlinker.models import ThirdPartyAccount
 from teams.forms import (
     CreateTeamForm, AddTeamVideoForm, EditTeamVideoForm,
     AddTeamVideosFromFeedForm, TaskAssignForm, SettingsForm, TaskCreateForm,
-    PermissionsForm, WorkflowForm, InviteForm, TaskDeleteForm,
-    GuidelinesMessagesForm, RenameableSettingsForm, ProjectForm, LanguagesForm,
-    DeleteLanguageForm, MoveTeamVideoForm, TaskUploadForm,
-    make_billing_report_form,
+    PermissionsForm, WorkflowForm, CollaborationWorkflowForm, InviteForm,
+    TaskDeleteForm, GuidelinesMessagesForm, RenameableSettingsForm,
+    ProjectForm, LanguagesForm, DeleteLanguageForm, MoveTeamVideoForm,
+    TaskUploadForm, make_billing_report_form,
 )
 from teams.models import (
     Team, TeamMember, Invite, Application, TeamVideo, Task, Project,
@@ -71,6 +71,7 @@ from teams.tasks import (
     update_video_moderation, update_one_team_video, update_video_public_field,
     invalidate_video_visibility_caches, process_billing_report
 )
+from teams import workflow
 from apps.videos.tasks import video_changed_tasks
 from utils import render_to, render_to_json, DEFAULT_PROTOCOL
 from utils.forms import flatten_errorlists
@@ -198,8 +199,8 @@ def create(request):
                     <li><a href="%(custom)s">Customize instructions to caption makers and translators</a></li>
                 </ul>
                 """ % dict(
-                    edit=reverse("teams:settings_permissions", kwargs={"slug": team.slug}),
-                    activate=reverse("teams:settings_permissions", kwargs={"slug": team.slug}),
+                    edit=reverse("teams:settings_workflow", kwargs={"slug": team.slug}),
+                    activate=reverse("teams:settings_workflow", kwargs={"slug": team.slug}),
                     create=reverse("teams:settings_projects", kwargs={"slug": team.slug}),
                     lang=reverse("teams:settings_languages", kwargs={"slug": team.slug}),
                     custom=reverse("teams:settings_guidelines", kwargs={"slug": team.slug}),
@@ -278,9 +279,15 @@ def settings_guidelines(request, team):
 
     return { 'team': team, 'form': form, }
 
-@render_to('teams/settings-permissions.html')
 @settings_page
-def settings_permissions(request, team):
+def settings_workflow(request, team):
+    if team.workflow_style != workflow.WORKFLOW_COLLABORATION:
+        return settings_workflow_tasks(request, team)
+    else:
+        return settings_workflow_collaboration(request, team)
+
+@render_to('teams/settings-workflow-tasks.html')
+def settings_workflow_tasks(request, team):
     # get the TaskWorkflow object associated with the team.  Don't use
     # team.get_workflow(), since this will not work if there is a workflow in
     # the DB, but workflow_style != WORKFLOW_TASKS
@@ -312,7 +319,31 @@ def settings_permissions(request, team):
         form = PermissionsForm(instance=team)
         workflow_form = WorkflowForm(instance=workflow)
 
-    return { 'team': team, 'form': form, 'workflow_form': workflow_form, }
+    return {
+        'team': team,
+        'form': form,
+        'workflow_form': workflow_form,
+    }
+
+@render_to('teams/settings-workflow-collaboration.html')
+def settings_workflow_collaboration(request, team):
+    if request.POST:
+        form = CollaborationWorkflowForm(team, request.POST)
+
+        if form.is_valid():
+            form.save()
+
+            messages.success(request, _(u'Settings saved.'))
+            return HttpResponseRedirect(request.path)
+        else:
+            print form.errors
+    else:
+        form = CollaborationWorkflowForm(team)
+
+    return {
+        'team': team,
+        'form': form,
+    }
 
 @render_to('teams/settings-projects.html')
 @settings_page

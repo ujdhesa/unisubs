@@ -38,7 +38,8 @@ from auth.models import CustomUser as User
 from auth.providers import get_authentication_provider
 from messages import tasks as notifier
 from subtitles.signals import language_deleted
-from teams.workflow import TaskWorkflow, Task
+from teams.workflow import TaskWorkflow, CollaborationWorkflow, Task
+from teams import workflow
 from teams.permissions_const import (
     TEAM_PERMISSIONS, PROJECT_PERMISSIONS, ROLE_OWNER, ROLE_ADMIN, ROLE_MANAGER,
     ROLE_CONTRIBUTOR
@@ -142,16 +143,6 @@ class Team(models.Model):
         (NOTIFY_HOURLY, _('Hourly')),
     )
 
-    WORKFLOW_NONE = "N"
-    WORKFLOW_TASKS = "T"
-    WORKFLOW_COLLABORATION = "C"
-
-    WORKFLOW_CHOICES = (
-        (WORKFLOW_NONE, "None"),
-        (WORKFLOW_TASKS, "Tasks"),
-        (WORKFLOW_COLLABORATION, "Collaboration"),
-    )
-
     name = models.CharField(_(u'name'), max_length=250, unique=True)
     slug = models.SlugField(_(u'slug'), unique=True)
     description = models.TextField(_(u'description'), blank=True, help_text=_('All urls will be converted to links. Line breaks and HTML not supported.'))
@@ -183,8 +174,9 @@ class Team(models.Model):
 
     # Enabling Features
     projects_enabled = models.BooleanField(default=False)
-    workflow_style = models.CharField(max_length=1, default="N",
-                                      choices=WORKFLOW_CHOICES)
+    workflow_style = models.CharField(max_length=1,
+                                      default=workflow.WORKFLOW_DEFAULT,
+                                      choices=workflow.WORKFLOW_CHOICES)
 
     # Policies and Permissions
     membership_policy = models.IntegerField(_(u'membership policy'),
@@ -282,24 +274,25 @@ class Team(models.Model):
 
     def _get_workflow_enabled(self):
         """Deprecated way to check if tasks are enabled for this team."""
-        return self.workflow_style == self.WORKFLOW_TASKS
+        return self.workflow_style == workflow.WORKFLOW_TASKS
 
     def _set_workflow_enabled(self, value):
         """Deprecated way to set the workflow style to tasks."""
         if value:
-            self.workflow_style = self.WORKFLOW_TASKS
+            self.workflow_style = workflow.WORKFLOW_TASKS
         else:
-            self.workflow_style = self.WORKFLOW_NONE
+            self.workflow_style = workflow.WORKFLOW_DEFAULT
     workflow_enabled = property(_get_workflow_enabled, _set_workflow_enabled)
 
     def get_workflow(self):
-        """Return the workflow for the given team.
+        """Deprecated: get the TaskForkflow for this team.
+
+        This is a letfover from when tasks were the only workflow option.  New
+        code should use the workflow property.
 
         A workflow will always be returned.  If one isn't specified for the team
         a default (unsaved) one will be populated with default values and
         returned.
-
-        TODO: Refactor this behaviour into something less confusing.
         """
         if self.workflow_enabled:
             try:
@@ -307,6 +300,10 @@ class Team(models.Model):
             except TaskWorkflow.DoesNotExist:
                 pass
         return TaskWorkflow(team=self)
+
+    @property
+    def workflow(self):
+        return workflow.get_team_workflow(self)
 
     @property
     def auth_provider(self):
