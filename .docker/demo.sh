@@ -25,7 +25,7 @@ sed -i "s/^STATIC_URL.*/STATIC_URL = 'http://s3.amazonaws.com/$BUCKET_NAME/'/g" 
 
 # requirements
 pushd $APP_DIR/deploy > /dev/null
-$VE_DIR/bin/pip install -U requirements.txt
+$VE_DIR/bin/pip install -U -r requirements.txt
 popd > /dev/null
 
 # db
