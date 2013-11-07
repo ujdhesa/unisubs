@@ -2,9 +2,9 @@
 source /usr/local/bin/config_env
 MYSQL_ADMIN_USER=${MYSQL_ADMIN_USER:-}
 MYSQL_ADMIN_PASS=${MYSQL_ADMIN_PASS:-}
-MYSQL_HOST=`cat $APP_DIR/server_local_settings.py | grep DATABASE_HOST |awk -F= '{ print $2; }'`
-MYSQL_USER=`cat $APP_DIR/server_local_settings.py | grep DATABASE_USER |awk -F= '{ print $2; }'`
-MYSQL_PASS=`cat $APP_DIR/server_local_settings.py | grep DATABASE_PASS |awk -F= '{ print $2; }'`
+MYSQL_HOST=`cat $APP_DIR/server_local_settings.py | grep DATABASE_HOST |awk -F= '{ print $2; }' | tr -d "'"`
+MYSQL_USER=`cat $APP_DIR/server_local_settings.py | grep DATABASE_USER |awk -F= '{ print $2; }' | tr -d "'"`
+MYSQL_PASS=`cat $APP_DIR/server_local_settings.py | grep DATABASE_PASS |awk -F= '{ print $2; }' | tr -d "'"`
 MYSQL_DB_NAME=${REV//-/_}
 
 PRE=""
