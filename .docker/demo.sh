@@ -5,18 +5,20 @@ MYSQL_ADMIN_PASS=${MYSQL_ADMIN_PASS:-}
 MYSQL_HOST=`cat $APP_DIR/server_local_settings.py | grep DATABASE_HOST |awk -F= '{ print $2; }'`
 MYSQL_USER=`cat $APP_DIR/server_local_settings.py | grep DATABASE_USER |awk -F= '{ print $2; }'`
 MYSQL_PASS=`cat $APP_DIR/server_local_settings.py | grep DATABASE_PASS |awk -F= '{ print $2; }'`
-MYSQL_DB_NAME=${$REV//-/_}
+MYSQL_DB_NAME=${REV//-/_}
 
 PRE=""
 CMD="uwsgi --ini $APP_ROOT/$APP_NAME.ini"
 BUCKET_NAME=s3.$REV.amara.org
 
+DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-client
+
 # create s3 bucket
 s3cmd -c /etc/s3cfg mb --force s3://$BUCKET_NAME
 
 # set new bucket in settings
-sed -i "s/^AWS_STORAGE_BUCKET_NAME.*/AWS_STORAGE_BUCKET_NAE = '$BUCKET_NAME'/g" $APP_DIR/server_local_settings.py
-sed -i "s/^AWS_USER_DATA_BUCKET_NAME.*/AWS_uSER_DATA_BUCKET_NAME = '$BUCKET_NAME'/g" $APP_DIR/server_local_settings.py
+sed -i "s/^AWS_STORAGE_BUCKET_NAME.*/AWS_STORAGE_BUCKET_NAME = '$BUCKET_NAME'/g" $APP_DIR/server_local_settings.py
+sed -i "s/^AWS_USER_DATA_BUCKET_NAME.*/AWS_USER_DATA_BUCKET_NAME = '$BUCKET_NAME'/g" $APP_DIR/server_local_settings.py
 sed -i "s/^DEFAULT_BUCKET.*/DEFAULT_BUCKET = '$BUCKET_NAME'/g" $APP_DIR/server_local_settings.py
 sed -i "s/^MEDIA_URL.*/MEDIA_URL = 'http://s3.amazonaws.com/$BUCKET_NAME/'/g" $APP_DIR/server_local_settings.py
 sed -i "s/^STATIC_URL.*/STATIC_URL = 'http://s3.amazonaws.com/$BUCKET_NAME/'/g" $APP_DIR/server_local_settings.py
@@ -28,9 +30,9 @@ echo "create database $MYSQL_DB_NAME character set utf8 collate utf8_unicode_ci;
 # rds doesn't allow 'grant all'
 echo "grant select,insert,update,delete,create,index,alter,create temporary tables,lock tables,execute,create view,show view,create routine,alter routine on $MYSQL_DB_NAME.* to $MYSQL_USER@'%';" | $SQL_CMD
 
-sed -i "s/^DATABASE_NAME.*/DATABASE_NAME = '$MYSQL_DB_NAME'" $APP_DIR/server_local_settings.py
-sed -i "s/^DATABASE_USER.*/DATABASE_USER = '$MYSQL_USER'" $APP_DIR/server_local_settings.py
-sed -i "s/^DATABASE_PASSWORD.*/DATABASE_PASSWORD = '$MYSQL_PASS'" $APP_DIR/server_local_settings.py
+sed -i "s/^DATABASE_NAME.*/DATABASE_NAME = '$MYSQL_DB_NAME'/g" $APP_DIR/server_local_settings.py
+sed -i "s/^DATABASE_USER.*/DATABASE_USER = '$MYSQL_USER'/g" $APP_DIR/server_local_settings.py
+sed -i "s/^DATABASE_PASSWORD.*/DATABASE_PASSWORD = '$MYSQL_PASS'/g" $APP_DIR/server_local_settings.py
 
 cat << EOF > $APP_ROOT/$APP_NAME.ini
 [uwsgi]
