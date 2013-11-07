@@ -2,10 +2,10 @@
 source /usr/local/bin/config_env
 MYSQL_ADMIN_USER=${MYSQL_ADMIN_USER:-}
 MYSQL_ADMIN_PASS=${MYSQL_ADMIN_PASS:-}
+MYSQL_DB_NAME=${REVISION//-/_}
 MYSQL_HOST=`cat $APP_DIR/server_local_settings.py | grep DATABASE_HOST |awk -F= '{ print $2; }' | tr -d "'"`
-MYSQL_USER=`cat $APP_DIR/server_local_settings.py | grep DATABASE_USER |awk -F= '{ print $2; }' | tr -d "'"`
+MYSQL_USER=$MYSQL_DB_NAME
 MYSQL_PASS=`cat $APP_DIR/server_local_settings.py | grep DATABASE_PASS |awk -F= '{ print $2; }' | tr -d "'"`
-MYSQL_DB_NAME=${REV//-/_}
 
 PRE=""
 CMD="uwsgi --ini $APP_ROOT/$APP_NAME.ini"
@@ -23,16 +23,23 @@ sed -i "s/^DEFAULT_BUCKET.*/DEFAULT_BUCKET = '$BUCKET_NAME'/g" $APP_DIR/server_l
 sed -i "s/^MEDIA_URL.*/MEDIA_URL = 'http://s3.amazonaws.com/$BUCKET_NAME/'/g" $APP_DIR/server_local_settings.py
 sed -i "s/^STATIC_URL.*/STATIC_URL = 'http://s3.amazonaws.com/$BUCKET_NAME/'/g" $APP_DIR/server_local_settings.py
 
-# create db
-SQL_CMD="mysql -u$MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS -h$MYSQL_HOST"
-echo "create user $MYSQL_USER$'%' identified by '$MYSQL_PASS';" | $SQL_CMD
-echo "create database $MYSQL_DB_NAME character set utf8 collate utf8_unicode_ci;" | $SQL_CMD
-# rds doesn't allow 'grant all'
-echo "grant select,insert,update,delete,create,index,alter,create temporary tables,lock tables,execute,create view,show view,create routine,alter routine on $MYSQL_DB_NAME.* to $MYSQL_USER@'%';" | $SQL_CMD
-
-sed -i "s/^DATABASE_NAME.*/DATABASE_NAME = '$MYSQL_DB_NAME'/g" $APP_DIR/server_local_settings.py
-sed -i "s/^DATABASE_USER.*/DATABASE_USER = '$MYSQL_USER'/g" $APP_DIR/server_local_settings.py
-sed -i "s/^DATABASE_PASSWORD.*/DATABASE_PASSWORD = '$MYSQL_PASS'/g" $APP_DIR/server_local_settings.py
+if [ ! -z "$MYSQL_ADMIN_USER" ] ; then
+    # create db
+    SQL_CMD="mysql -u$MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS -h$MYSQL_HOST"
+    echo "create user $MYSQL_USER@'%' identified by '$MYSQL_PASS';" | $SQL_CMD
+    echo "create database $MYSQL_DB_NAME character set utf8 collate utf8_unicode_ci;" | $SQL_CMD
+    # rds doesn't allow 'grant all'
+    echo "grant select,insert,update,delete,create,index,alter,create temporary tables,lock tables,execute,create view,show view,create routine,alter routine on $MYSQL_DB_NAME.* to $MYSQL_USER@'%';" | $SQL_CMD
+    
+    sed -i "s/^DATABASE_NAME.*/DATABASE_NAME = '$MYSQL_DB_NAME'/g" $APP_DIR/server_local_settings.py
+    sed -i "s/^DATABASE_USER.*/DATABASE_USER = '$MYSQL_USER'/g" $APP_DIR/server_local_settings.py
+    sed -i "s/^DATABASE_PASSWORD.*/DATABASE_PASSWORD = '$MYSQL_PASS'/g" $APP_DIR/server_local_settings.py
+    
+    # syncdb
+    pushd $APP_DIR > /dev/null
+    $VE_DIR/bin/python manage.py syncdb --noinput --all --settings=unisubs_settings
+    $VE_DIR/bin/python manage.py migrate --fake --settings=unisubs_settings
+fi
 
 cat << EOF > $APP_ROOT/$APP_NAME.ini
 [uwsgi]
