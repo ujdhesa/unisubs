@@ -23,6 +23,12 @@ sed -i "s/^DEFAULT_BUCKET.*/DEFAULT_BUCKET = '$BUCKET_NAME'/g" $APP_DIR/server_l
 sed -i "s/^MEDIA_URL.*/MEDIA_URL = 'http://s3.amazonaws.com/$BUCKET_NAME/'/g" $APP_DIR/server_local_settings.py
 sed -i "s/^STATIC_URL.*/STATIC_URL = 'http://s3.amazonaws.com/$BUCKET_NAME/'/g" $APP_DIR/server_local_settings.py
 
+# requirements
+pushd $APP_DIR/deploy > /dev/null
+$VE_DIR/bin/pip install -U requirements.txt
+popd > /dev/null
+
+# db
 if [ ! -z "$MYSQL_ADMIN_USER" ] ; then
     # create db
     SQL_CMD="mysql -u$MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASS -h$MYSQL_HOST"
@@ -39,6 +45,7 @@ if [ ! -z "$MYSQL_ADMIN_USER" ] ; then
     pushd $APP_DIR > /dev/null
     $VE_DIR/bin/python manage.py syncdb --noinput --all --settings=unisubs_settings
     $VE_DIR/bin/python manage.py migrate --fake --settings=unisubs_settings
+    popd > /dev/null
 fi
 
 cat << EOF > $APP_ROOT/$APP_NAME.ini
