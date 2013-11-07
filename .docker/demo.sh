@@ -28,6 +28,9 @@ pushd $APP_DIR/deploy > /dev/null
 $VE_DIR/bin/pip install -U -r requirements.txt
 popd > /dev/null
 
+# build media
+/usr/local/bin/build_media
+
 # db
 if [ ! -z "$MYSQL_ADMIN_USER" ] ; then
     # create db
