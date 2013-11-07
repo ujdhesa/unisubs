@@ -15,6 +15,7 @@ ADD .docker/config_env.sh /usr/local/bin/config_env
 ADD .docker/setup.sh /tmp/setup.sh
 ADD .docker/build_media.sh /usr/local/bin/build_media
 ADD .docker/worker.sh /usr/local/bin/worker
+ADD .docker/demo.sh /usr/local/bin/demo
 ADD .docker/test_app.sh /usr/local/bin/test_app
 ADD .docker/update_translations.sh /usr/local/bin/update_translations
 RUN /bin/bash /tmp/setup.sh
