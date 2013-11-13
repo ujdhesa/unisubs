@@ -20,8 +20,8 @@ s3cmd -c /etc/s3cfg mb --force s3://$BUCKET_NAME
 sed -i "s/^AWS_STORAGE_BUCKET_NAME.*/AWS_STORAGE_BUCKET_NAME = '$BUCKET_NAME'/g" $APP_DIR/server_local_settings.py
 sed -i "s/^AWS_USER_DATA_BUCKET_NAME.*/AWS_USER_DATA_BUCKET_NAME = '$BUCKET_NAME'/g" $APP_DIR/server_local_settings.py
 sed -i "s/^DEFAULT_BUCKET.*/DEFAULT_BUCKET = '$BUCKET_NAME'/g" $APP_DIR/server_local_settings.py
-sed -i "s/^MEDIA_URL.*/MEDIA_URL = 'http://s3.amazonaws.com/$BUCKET_NAME/'/g" $APP_DIR/server_local_settings.py
-sed -i "s/^STATIC_URL.*/STATIC_URL = 'http://s3.amazonaws.com/$BUCKET_NAME/'/g" $APP_DIR/server_local_settings.py
+sed -i "s/^MEDIA_URL.*/MEDIA_URL = 'http:\/\/s3.amazonaws.com\/$BUCKET_NAME\/'/g" $APP_DIR/server_local_settings.py
+sed -i "s/^STATIC_URL.*/STATIC_URL = 'http:\/\/s3.amazonaws.com\/$BUCKET_NAME\/'/g" $APP_DIR/server_local_settings.py
 
 # requirements
 pushd $APP_DIR/deploy > /dev/null
