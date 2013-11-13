@@ -72,9 +72,9 @@ Host github.com
 EOF
     cd $APP_DIR
     git fetch
-    git branch --track $REV origin/$REV
-    git checkout --force $REV
-    git pull --ff-only origin $REV
+    git checkout staging
+    git pull --ff-only
+    git checkout $REV
     if [ ! -e "unisubs-integration" ]; then
         until git clone git@github.com:pculture/unisubs-integration.git ; do
             echo "Error during clone; trying again in 5 seconds..."
@@ -90,9 +90,9 @@ fi
 if [ -z "$SKIP_CODE_PULL" ] ; then
     cd $APP_DIR
     git fetch
-    git branch --track $REV origin/$REV
-    git checkout --force $REV
-    git pull --ff-only origin $REV
+    git checkout staging
+    git pull --ff-only
+    git checkout $REV
     if [ -e $APP_DIR/unisubs-integration ]; then
         cd $APP_DIR/unisubs-integration
         git fetch
