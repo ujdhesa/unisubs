@@ -1489,6 +1489,10 @@ class TeamLanguagePreferenceManager(models.Manager):
 class TeamLanguagePreference(models.Model):
     """Represent language preferences for a given team.
 
+    This model preresents language preferences for the old tasks-style
+    workflow model.  For the new collaboration style, we use
+    TeamPreferredLanguage.
+
     First, TLPs may mark a language as "preferred".  If that's the case then the
     other attributes of this model are irrelevant and can be ignored.
     "Preferred" languages will have translation tasks automatically created for
@@ -1552,6 +1556,23 @@ class TeamLanguagePreference(models.Model):
 
 post_save.connect(TeamLanguagePreference.objects.on_changed, TeamLanguagePreference)
 
+class TeamPreferredLanguage(models.Model):
+    """Represent a language that a team wants subtitles for
+    """
+    team = models.ForeignKey(Team)
+    project = models.ForeignKey(Project, null=True, blank=True)
+    language_code = models.CharField(max_length=16)
+
+    class Meta:
+        unique_together = ('team', 'language_code')
+
+    def __unicode__(self):
+        if self.project is None:
+            return u"Preferred Language: %s for team %s" % (
+                self.language_code, self.team)
+        else:
+            return u"Preferred Language: %s for team %s (project: %s)" % (
+                self.language_code, self.team, self.project)
 
 # TeamNotificationSettings
 class TeamNotificationSettingManager(models.Manager):

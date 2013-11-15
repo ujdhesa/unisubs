@@ -383,7 +383,6 @@ def _set_languages(team, codes_preferred, codes_blacklisted):
                                      preferred=False)
         tlp.save()
 
-@render_to('teams/settings-languages.html')
 @login_required
 def settings_languages(request, slug):
     team = Team.get(slug, request.user)
@@ -392,6 +391,13 @@ def settings_languages(request, slug):
         messages.error(request, _(u'You do not have permission to edit this team.'))
         return HttpResponseRedirect(team.get_absolute_url())
 
+    if team.workflow_style == workflow.WORKFLOW_COLLABORATION:
+        return settings_languages_collab(request, team)
+    else:
+        return settings_languages_tasks(request, team)
+
+@render_to('teams/settings-languages-tasks.html')
+def settings_languages_tasks(request, team):
     preferred = [tlp.language_code for tlp in
                  TeamLanguagePreference.objects.for_team(team).filter(preferred=True)]
     blacklisted = [tlp.language_code for tlp in
@@ -412,6 +418,31 @@ def settings_languages(request, slug):
 
     return { 'team': team, 'form': form }
 
+@render_to('teams/settings-languages-collab.html')
+def settings_languages_collab(request, team):
+    preferred = [tlp.language_code for tlp in
+                 TeamLanguagePreference.objects.for_team(team).filter(preferred=True)]
+    blacklisted = [tlp.language_code for tlp in
+                   TeamLanguagePreference.objects.for_team(team).filter(preferred=False)]
+    initial = {'preferred': preferred, 'blacklisted': blacklisted}
+
+    if request.POST:
+        form = LanguagesForm(team, request.POST, initial=initial)
+
+        if form.is_valid():
+            _set_languages(team, form.cleaned_data['preferred'], form.cleaned_data['blacklisted'])
+
+            messages.success(request, _(u'Settings saved.'))
+            invalidate_video_caches.delay(team.pk)
+            return HttpResponseRedirect(request.path)
+    else:
+        form = LanguagesForm(team, initial=initial)
+
+    return { 'team': team, 'form': form }
+
+    return {
+        'team': team,
+   }
 
 def _default_project_for_team(team):
     """Get the default project to filter by for the videos/tasks lists
