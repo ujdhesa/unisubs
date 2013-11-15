@@ -256,7 +256,7 @@ class CreateTeamForm(BaseVideoBoundForm):
     class Meta:
         model = Team
         fields = ('name', 'slug', 'description', 'logo', 'is_moderated',
-                  'is_visible', 'video_url')
+                  'is_visible', 'video_url', 'workflow_style')
 
     def __init__(self, user, *args, **kwargs):
         self.user = user

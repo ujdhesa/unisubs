@@ -51,6 +51,7 @@
                     <legend>{% trans 'Display Settings' %}</legend>
                     {% include "_form_field.html" with field=form.logo label="Logo/Banner" help_text="Max 940 x 235" %}
                     {% include "_form_field.html" with field=form.is_visible widget_type="checkbox" %}
+                    {% include "_form_field.html" with field=form.workflow_style  %}
                 </fieldset>
             </div>
             <div class="submit">
