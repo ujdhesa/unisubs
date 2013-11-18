@@ -44,7 +44,7 @@ from apps.videos.tasks import import_videos_from_feed
 from teams import workflow
 from utils.forms import ErrorableModelForm
 from utils.forms.unisub_video_form import UniSubBoundVideoField
-from utils.translation import get_language_choices
+from utils.translation import get_language_choices, language_choices_lazy
 from utils.validators import MaxFileSizeValidator
 
 
@@ -602,6 +602,10 @@ class LanguagesForm(forms.Form):
             raise forms.ValidationError(_(u'You cannot blacklist a preferred language.'))
 
         return self.cleaned_data
+
+class CollaborationLanguagesForm(forms.Form):
+    languages = forms.MultipleChoiceField(required=False,
+                                          choices=language_choices_lazy)
 
 class InviteForm(forms.Form):
     user_id = forms.CharField(required=False, widget=forms.Select)

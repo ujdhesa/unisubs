@@ -19,7 +19,20 @@
             {% endwith %}
         </div>
 
-        <h1>HELLO!</h1>
+        <form class="settings" enctype="multipart/form-data" method="POST" action="">
+            {{ form.non_field_errors }}
+            {% csrf_token %}
+
+            <fieldset>
+                <legend>{% trans 'Preferred Languages' %}</legend>
+                <p class="notation">{% trans 'Select languages that you want subtitles for' %} </p>
+                {{ form.languages }}
+            </fieldset>
+
+            <div class="submit">
+                <input type="submit" class="submit save" value="Save Changes" name="save" />
+            </div>
+        </form>
 
     </div>
 

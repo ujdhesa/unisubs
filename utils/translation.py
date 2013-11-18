@@ -4,6 +4,7 @@ import time
 from django.conf import settings
 from django.core.cache import cache
 from django.utils import simplejson as json
+from django.utils.functional import lazy
 from django.utils.http import cookie_date
 from django.utils.translation import (
     get_language, get_language_info, ugettext as _
@@ -43,6 +44,8 @@ def get_language_choices(with_empty=False):
         languages = [('', '---------')] + languages
 
     return languages
+
+language_choices_lazy = lazy(get_language_choices, list)()
 
 def get_language_choices_as_dicts(with_empty=False):
     """Return a list of language code choices labeled appropriately."""

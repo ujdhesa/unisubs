@@ -1491,7 +1491,7 @@ class TeamLanguagePreference(models.Model):
 
     This model preresents language preferences for the old tasks-style
     workflow model.  For the new collaboration style, we use
-    TeamPreferredLanguage.
+    CollaborationLanguage.
 
     First, TLPs may mark a language as "preferred".  If that's the case then the
     other attributes of this model are irrelevant and can be ignored.
@@ -1556,12 +1556,30 @@ class TeamLanguagePreference(models.Model):
 
 post_save.connect(TeamLanguagePreference.objects.on_changed, TeamLanguagePreference)
 
-class TeamPreferredLanguage(models.Model):
-    """Represent a language that a team wants subtitles for
-    """
+class CollaborationLanguageManager(models.Manager):
+    def for_team(self, team):
+        return self.filter(team=team, project=None)
+
+    def update_for_team(self, team, language_codes):
+        (self.for_team(team)
+         .exclude(language_code__in=language_codes)
+         .delete())
+
+        existing = set(self.for_team(team).values_list('language_code',
+                                                       flat=True))
+        to_create = [lc for lc in language_codes if lc not in existing]
+        self.bulk_create([CollaborationLanguage(
+            team=team, project=None, language_code=lc)
+            for lc in to_create])
+
+class CollaborationLanguage(models.Model):
+    """Represent a language that a team wants subtitles for """
+
     team = models.ForeignKey(Team)
     project = models.ForeignKey(Project, null=True, blank=True)
     language_code = models.CharField(max_length=16)
+
+    objects = CollaborationLanguageManager()
 
     class Meta:
         unique_together = ('team', 'language_code')

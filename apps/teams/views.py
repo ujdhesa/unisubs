@@ -49,13 +49,14 @@ from teams.forms import (
     AddTeamVideosFromFeedForm, TaskAssignForm, SettingsForm, TaskCreateForm,
     PermissionsForm, WorkflowForm, CollaborationWorkflowForm, InviteForm,
     TaskDeleteForm, GuidelinesMessagesForm, RenameableSettingsForm,
-    ProjectForm, LanguagesForm, DeleteLanguageForm, MoveTeamVideoForm,
-    TaskUploadForm, make_billing_report_form,
+    ProjectForm, LanguagesForm, CollaborationLanguagesForm,
+    DeleteLanguageForm, MoveTeamVideoForm, TaskUploadForm,
+    make_billing_report_form,
 )
 from teams.models import (
     Team, TeamMember, Invite, Application, TeamVideo, Task, Project,
     TaskWorkflow, Setting, TeamLanguagePreference, InviteExpiredException,
-    BillingReport, ApplicationInvalidException
+    BillingReport, ApplicationInvalidException, CollaborationLanguage,
 )
 from teams.permissions import (
     can_add_video, can_assign_role, can_assign_tasks, can_create_task_subtitle,
@@ -420,29 +421,26 @@ def settings_languages_tasks(request, team):
 
 @render_to('teams/settings-languages-collab.html')
 def settings_languages_collab(request, team):
-    preferred = [tlp.language_code for tlp in
-                 TeamLanguagePreference.objects.for_team(team).filter(preferred=True)]
-    blacklisted = [tlp.language_code for tlp in
-                   TeamLanguagePreference.objects.for_team(team).filter(preferred=False)]
-    initial = {'preferred': preferred, 'blacklisted': blacklisted}
+    initial = {
+        'languages': [
+            tcl.language_code for tcl in
+            CollaborationLanguage.objects.for_team(team)
+        ],
+    }
 
     if request.POST:
-        form = LanguagesForm(team, request.POST, initial=initial)
+        form = CollaborationLanguagesForm(request.POST, initial=initial)
 
         if form.is_valid():
-            _set_languages(team, form.cleaned_data['preferred'], form.cleaned_data['blacklisted'])
+            CollaborationLanguage.objects.update_for_team(
+                team, form.cleaned_data['languages'])
 
             messages.success(request, _(u'Settings saved.'))
-            invalidate_video_caches.delay(team.pk)
             return HttpResponseRedirect(request.path)
     else:
-        form = LanguagesForm(team, initial=initial)
+        form = CollaborationLanguagesForm(initial=initial)
 
     return { 'team': team, 'form': form }
-
-    return {
-        'team': team,
-   }
 
 def _default_project_for_team(team):
     """Get the default project to filter by for the videos/tasks lists
