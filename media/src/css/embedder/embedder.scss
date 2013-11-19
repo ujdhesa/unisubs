@@ -261,6 +261,11 @@ div.amara-embed {
 			a.currently-selected {
 			    font-weight: bold;
 			}
+                        a.language-invisible-item {
+                            pointer-events: none;
+                            cursor: default;
+                            color: #666;
+                        }
                      }
                 }
             }

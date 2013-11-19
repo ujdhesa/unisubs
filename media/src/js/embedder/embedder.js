@@ -364,14 +364,16 @@
                 
 
                 if (langs.length) {
-                    for (var i = 0; i < langs.length; i++) {
+		    _$.each(langs, function(i, lang) {
                         _$('#language-list-inside').append('' +
                             '<li role="presentation">' +
-                                '<a  role="menuitem" tabindex="-1" href="#" class="language-item" data-language="' + langs[i].code + '">' +
-                                    langs[i].name +
+                                '<a  role="menuitem" tabindex="-1" href="#" class="language-item' + 
+                                ((lang.hasOwnProperty("visible") && lang.visible)  ? '"' : (' language-invisible-item" title="Language not available"')) + 
+                                ' data-language="' + lang.code + '">' +
+                                lang.name +
                                 '</a>' +
                             '</li>');
-                    }
+		    });
 		    // Scrollbar for languages only
 		    _$('#language-list-inside').mCustomScrollbar({
 			theme:"light-thick"
