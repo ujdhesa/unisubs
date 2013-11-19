@@ -885,13 +885,21 @@ class CollaborationWorkflow(models.Model):
     created = models.DateTimeField(auto_now_add=True, editable=False)
     modified = models.DateTimeField(auto_now=True, editable=False)
 
+    def needs_review(self):
+        return self.completion_policy in (self.COMPLETION_REVIEWER,
+                                          self.COMPLETION_APPROVER)
+
+    def needs_approval(self):
+        return self.completion_policy == self.COMPLETION_APPROVER
+
 class DefaultWorkflow(object):
     """Workflow for teams that use the default model.
 
     Unlike TaskWorkflow or CollaborationWorkflow, DefaultWorkflow is a plain
     python object, not a django model.
     """
-    pass
+    def __init__(self, team):
+        self.team = team
 
 def get_team_workflow(team):
     """Get a workflow object for a team.
@@ -899,9 +907,9 @@ def get_team_workflow(team):
     This function is used by the Team.workflow property.
     """
     if team.workflow_style == WORKFLOW_TASKS:
-        return TaskWorkflow(team)
+        return TaskWorkflow.objects.get_or_create(team=team)[0]
     elif team.workflow_style == WORKFLOW_COLLABORATION:
-        return CollaborationWorkflow(team)
+        return CollaborationWorkflow.objects.get_or_create(team=team)[0]
     elif team.workflow_style == WORKFLOW_DEFAULT:
         return DefaultWorkflow(team)
     else:

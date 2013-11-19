@@ -303,7 +303,14 @@ class Team(models.Model):
 
     @property
     def workflow(self):
-        return workflow.get_team_workflow(self)
+        if hasattr(self, '_workflow'):
+            return self._workflow
+        self._workflow = workflow.get_team_workflow(self)
+        return self._workflow
+
+    def clear_cached_workflow(self):
+        if hasattr(self, '_workflow'):
+            del self._workflow
 
     @property
     def auth_provider(self):
@@ -1558,9 +1565,11 @@ post_save.connect(TeamLanguagePreference.objects.on_changed, TeamLanguagePrefere
 
 class CollaborationLanguageManager(models.Manager):
     def for_team(self, team):
+        """Get preferred languages for a team."""
         return self.filter(team=team, project=None)
 
     def update_for_team(self, team, language_codes):
+        """Update preferred languages for a team."""
         (self.for_team(team)
          .exclude(language_code__in=language_codes)
          .delete())
@@ -1571,6 +1580,26 @@ class CollaborationLanguageManager(models.Manager):
         self.bulk_create([CollaborationLanguage(
             team=team, project=None, language_code=lc)
             for lc in to_create])
+
+    def languages_for_member(self, team_member):
+        """Get preferred languages for a team member.
+
+        This will limit the languages to those associated with the user (using
+        the UserLanguage model), and those preferred by the team.
+
+        If no CollaborationLanguage are set up for the team, then all user
+        languages will be returned.
+
+        :returns: list of language codes
+        """
+        user_langs = [l.language for l in team_member.user.get_languages()]
+        team_langs = set(
+            cl.language_code for cl in
+            CollaborationLanguage.objects.for_team(team_member.team))
+        if not team_langs:
+            return user_langs
+        else:
+            return [code for code in user_langs if code in team_langs]
 
 class CollaborationLanguage(models.Model):
     """Represent a language that a team wants subtitles for """
@@ -2191,6 +2220,53 @@ class Collaboration(models.Model):
     def owning_team(self):
         return self.team_video.team
 
+    def state_label(self):
+        # map roles to if we have a collaborator
+        have_collaborator = {
+            Collaborator.ROLE_SUBTITLER: False,
+            Collaborator.ROLE_REVIEWER: False,
+            Collaborator.ROLE_APPROVER: False,
+        }
+        # map roles to if we have an endorsement
+        have_endorsement = {
+            Collaborator.ROLE_SUBTITLER: False,
+            Collaborator.ROLE_REVIEWER: False,
+            Collaborator.ROLE_APPROVER: False,
+        }
+        for c in self.get_collaborators():
+            have_collaborator[c.role] = True
+            if c.endorsed:
+                have_endorsement[c.role] = True
+
+        if not have_collaborator[Collaborator.ROLE_SUBTITLER]:
+            return _("needs subtitler")
+        if not have_endorsement[Collaborator.ROLE_SUBTITLER]:
+            return _("being subtitled")
+        if not self.team.workflow.needs_review():
+            return _("complete")
+        if not have_collaborator[Collaborator.ROLE_REVIEWER]:
+            return _("needs reviewer")
+        if not have_endorsement[Collaborator.ROLE_REVIEWER]:
+            return _("being reviewed")
+        if not self.team.workflow.needs_approval():
+            return _("complete")
+        if not have_collaborator[Collaborator.ROLE_APPROVER]:
+            return _("needs approver")
+        if not have_endorsement[Collaborator.ROLE_APPROVER]:
+            return _("being approved")
+        return _("complete")
+
+    def get_collaborators(self):
+        """Get a list of collaborators"""
+        if hasattr(self, '_collaborators'):
+            return self._collaborators
+        self._collaborators = list(self.collaborator_set.all())
+        return self._collaborators
+
+    def clear_cached_collaborators(self):
+        if hasattr(self, '_collaborators'):
+            del self._collaborators
+
 class Collaborator(models.Model):
     """User who is part of a collaboration."""
 
@@ -2203,11 +2279,31 @@ class Collaborator(models.Model):
         (ROLE_APPROVER, _('Approver')),
     ]
 
+    # Make now as a plain function so we can patch it in the unittests
+    @staticmethod
+    def now():
+        return datetime.datetime.now()
+
     collaboration = models.ForeignKey(Collaboration)
     user = models.ForeignKey(User)
     role = models.CharField(max_length=1, choices=ROLES)
     start_date = models.DateTimeField()
     endorsement_date = models.DateTimeField(blank=True, null=True)
+
+    def __init__(self, *args, **kwargs):
+        if not args and 'start_date' not in kwargs:
+            kwargs['start_date'] = Collaborator.now()
+        return models.Model.__init__(self, *args, **kwargs)
+
+    @property
+    def endorsed(self):
+        return self.endorsement_date is not None
+
+    def mark_endorsed(self, commit=True):
+        """Mark this collaboration endorsed by this collaborator.  """
+        self.endorsement_date = Collaborator.now()
+        if commit:
+            self.save()
 
 class CollaborationHistory(models.Model):
     """Tracks changes to a collaboration."""

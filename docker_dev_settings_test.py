@@ -18,6 +18,11 @@
 
 from docker_dev_settings import *
 
+NOSE_ARGS = [
+    '--logging-filter=-factory',
+]
+
+
 INSTALLED_APPS += (
     'django_nose',
 )
