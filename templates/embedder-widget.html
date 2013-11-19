@@ -1,0 +1,14 @@
+{% load media_compressor %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Embedder test for external sites.</title>
+    <meta charset="utf-8" />
+    {% include_bootstrapped_bundle 'embedder' %}
+  </head>
+  <body>
+    <div class="container">
+      <div class="amara-embed" style="height: 480px; width: 854px" data-url="http://www.youtube.com/watch?v=5CKwCfLUwj4" ></div>
+    </div>
+  </body>
+</html>

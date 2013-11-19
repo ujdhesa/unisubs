@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Test page for an embedder based on iframes</title>
+  </head>
+  <body>
+    <script>
+      function resizeIframeWidth(e){
+        if (e.contentDocument && e.contentDocument.body && e.contentDocument.body.scrollWidth) {
+          e.width = 0;
+          e.width = e.contentDocument.body.scrollWidth + 20;
+          e.height = e.contentDocument.body.scrollHeight + 20;
+        }
+      }
+      window.onload = function () {
+      var iframe = document.getElementById("myiframe");
+      iframe.src = "http://" + window.location.host + "/embedder-widget/";
+      window.setInterval(function() {resizeIframeWidth(iframe);},100);
+      }
+    </script>
+    <h2>Test page for an embedder based on iframes</h2>
+    <iframe id="myiframe" frameborder="0" scrolling="no" src=""></iframe>
+    <p>The widget resizes itself automatically, but the dropdown menu never overlaps with the content of the host page.</p>
+  </body>
+</html>
