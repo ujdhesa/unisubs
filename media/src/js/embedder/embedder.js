@@ -123,6 +123,24 @@
             thumbnail: null,
             title: null,
 
+	    analyzeLanguages: function() {
+		// This looks at all languages and their visibility property
+		// and sets the initial language to the correct value
+		var firstVisible = -1;
+		var visibleLanguages = {};
+                this.set('languages', this.get('languages').sort(function(l1, l2) {return (l1.name > l2.name);}));
+		_$.each(this.get('languages'), function(i, lang) {
+		    if (lang.hasOwnProperty("visible") && lang.visible) {
+			visibleLanguages[lang.code] = 1;
+			if (firstVisible == -1) firstVisible = i;
+		    }
+		});
+		this.set('initial_language',
+			 (this.get('initial_language') && visibleLanguages.hasOwnProperty(this.get('initial_language'))) ? this.get('initial_language') :
+			 (this.get('original_language') && visibleLanguages.hasOwnProperty(this.get('original_language'))) ? this.get('original_language') :
+			 visibleLanguages.hasOwnProperty('en') ? 'en' :
+			 (firstVisible != -1) ? this.get('languages')[firstVisible].code : '');
+	    },
             // Every time a video model is created, do this.
             initialize: function() {
 
@@ -151,11 +169,7 @@
 
                                 // Set the initial language to either the one provided by the initial
                                 // options, or the original language from the API.
-                                video.set('initial_language',
-                                    video.get('initial_language') ||
-                                    video.get('original_language') ||
-                                    'en'
-                                );
+				video.analyzeLanguages();
                             }
 
                         } else {
@@ -316,7 +330,12 @@
                                 // Make the request to fetch the initial subtitles.
                                 //
                                 // TODO: This needs to be an option.
-                                that.loadSubtitles(that.model.get('initial_language'));
+				// We have set the proper value for initial language
+				// if it is '', then no language is available
+				if (that.model.get('initial_language') && that.model.get('initial_language').length)
+                                    that.loadSubtitles(that.model.get('initial_language'));
+				else
+                                    that.setCurrentLanguageMessage('No available language');
                             } else {
                                 // Do some other stuff for videos that aren't yet on Amara.
                                 that.setCurrentLanguageMessage('Video not on Amara');
@@ -352,8 +371,7 @@
             },
             
             buildLanguageSelector: function() {
-                var langs = this.model.get('languages');
-                langs.sort(function(l1, l2) {return (l1.name > l2.name);});		
+                var langs = this.model.get('languages');		
                 var video_url = this.model.get('url');
                 this.$amaraLanguagesList.append(this.templateVideo({
                         video_url: 'http://' + _amaraConf.baseURL + '/en/videos/create/?initial_url=' + video_url,
@@ -362,7 +380,6 @@
 		// TODO: This wont work if we have several widgets in one page
                 this.$amaraLanguagesList.append('            <li role="presentation"><div><ul id="language-list-inside"></ul></div></li>');
                 
-
                 if (langs.length) {
 		    _$.each(langs, function(i, lang) {
                         _$('#language-list-inside').append('' +
