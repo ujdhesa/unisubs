@@ -5,11 +5,22 @@
   </head>
   <body>
     <script>
+      var oldWidth = oldHeight = -1;
       function resizeIframeWidth(e){
-        if (e.contentDocument && e.contentDocument.body && e.contentDocument.body.scrollWidth) {
+        if (e.contentDocument && e.contentDocument.body && e.contentDocument.body.scrollWidth && e.contentDocument.body.scrollHeight) {
+          if ((oldHeight != e.contentDocument.body.scrollHeight) || (oldWidth != e.contentDocument.body.scrollWidth)) {
+            oldHeight = e.contentDocument.body.scrollHeight;
+            oldWidth = e.contentDocument.body.scrollWidth;
+            e.width = e.height = 0;
+            e.width = e.contentDocument.body.scrollWidth + 20;
+            e.height = e.contentDocument.body.scrollHeight + 20;
+          }
+        }
+        else if (e.Document && e.Document.body.scrollWidth && e.Document.body.scrollHeight) {
           e.width = 0;
-          e.width = e.contentDocument.body.scrollWidth + 20;
-          e.height = e.contentDocument.body.scrollHeight + 20;
+          e.height = 0;
+          e.width = e.e.Document.body.scrollWidth + 20;
+          e.height = e.Document.body.scrollHeight + 20;
         }
       }
       window.onload = function () {
