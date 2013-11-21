@@ -2209,84 +2209,107 @@ class Partner(models.Model):
 class Collaboration(models.Model):
     """Tracks subtitling work for a video language."""
 
+    NEEDS_SUBTITLER = 's'
+    BEING_SUBTITLED = 'S'
+    NEEDS_REVIEWER = 'r'
+    BEING_REVIEWED = 'R'
+    NEEDS_APPROVER = 'a'
+    BEING_APPROVED = 'A'
+    COMPLETE = 'C'
+
+    STATE_CHOICES = [
+        (NEEDS_SUBTITLER, 'needs subtitler'),
+        (BEING_SUBTITLED, 'being subtitled'),
+        (NEEDS_REVIEWER, 'needs reviewer'),
+        (BEING_REVIEWED, 'being reviewed'),
+        (NEEDS_APPROVER, 'needs approver'),
+        (BEING_APPROVED, 'being approved'),
+        (COMPLETE, 'complete'),
+    ]
+
     # video/language being worked on
     team_video = models.ForeignKey(TeamVideo)
     language_code = models.CharField(max_length=16, choices=ALL_LANGUAGES)
+    state = models.CharField(max_length=1, choices=STATE_CHOICES,
+                             default=NEEDS_SUBTITLER)
+    last_joined = models.DateTimeField(null=True, blank=True, default=None,
+                                       db_index=True)
     # team doing the work.  Note that the video can be owned by a different
     # team in the case of shared projects.  Use owning_team() to get the team
     # that owns the video.
     team = models.ForeignKey(Team)
 
+    class Meta:
+        unique_together = ('team_video', 'language_code')
+
     def owning_team(self):
         return self.team_video.team
 
-    def state_label(self):
-        # map roles to if we have a collaborator
-        have_collaborator = {
-            Collaborator.ROLE_SUBTITLER: False,
-            Collaborator.ROLE_REVIEWER: False,
-            Collaborator.ROLE_APPROVER: False,
+    def add_collaborator(self, user, role):
+        """Add a new collaborator to this collaboration.
+
+        This method creates the Collaborator and potentially updates our
+        state.
+
+        :returns: Collaborator object.
+        """
+        collaborator = Collaborator.objects.create(collaboration=self,
+                                                   user=user, role=role)
+        # Create a lookup table that maps (old_state, role) -> new_state
+        state_change_map = {
+            (Collaboration.NEEDS_SUBTITLER,
+             Collaborator.SUBTITLER): Collaboration.BEING_SUBTITLED,
+            (Collaboration.NEEDS_REVIEWER,
+             Collaborator.REVIEWER): Collaboration.BEING_REVIEWED,
+            (Collaboration.NEEDS_APPROVER,
+             Collaborator.APPROVER): Collaboration.BEING_APPROVED,
         }
-        # map roles to if we have an endorsement
-        have_endorsement = {
-            Collaborator.ROLE_SUBTITLER: False,
-            Collaborator.ROLE_REVIEWER: False,
-            Collaborator.ROLE_APPROVER: False,
-        }
-        for c in self.get_collaborators():
-            have_collaborator[c.role] = True
-            if c.endorsed:
-                have_endorsement[c.role] = True
+        new_state = state_change_map.get((self.state, role))
+        if new_state is not None:
+            self.state = new_state
+            self.save()
+        return collaborator
 
-        if not have_collaborator[Collaborator.ROLE_SUBTITLER]:
-            return _("needs subtitler")
-        if not have_endorsement[Collaborator.ROLE_SUBTITLER]:
-            return _("being subtitled")
-        if not self.team.workflow.needs_review():
-            return _("complete")
-        if not have_collaborator[Collaborator.ROLE_REVIEWER]:
-            return _("needs reviewer")
-        if not have_endorsement[Collaborator.ROLE_REVIEWER]:
-            return _("being reviewed")
-        if not self.team.workflow.needs_approval():
-            return _("complete")
-        if not have_collaborator[Collaborator.ROLE_APPROVER]:
-            return _("needs approver")
-        if not have_endorsement[Collaborator.ROLE_APPROVER]:
-            return _("being approved")
-        return _("complete")
-
-    def get_collaborators(self):
-        """Get a list of collaborators"""
-        if hasattr(self, '_collaborators'):
-            return self._collaborators
-        self._collaborators = list(self.collaborator_set.all())
-        return self._collaborators
-
-    def clear_cached_collaborators(self):
-        if hasattr(self, '_collaborators'):
-            del self._collaborators
+    def mark_endorsed(self, user):
+        """Mark this collaboration endorsed by a user."""
+        collaborator = self.collaborator_set.get(user=user)
+        collaborator.mark_endorsed()
+        # Check if the endorsement changes our state
+        new_state = None
+        if self.state == Collaboration.BEING_SUBTITLED:
+            if collaborator.role == Collaborator.SUBTITLER:
+                if self.team.workflow.needs_review():
+                    new_state = Collaboration.NEEDS_REVIEWER
+                else:
+                    new_state = Collaboration.COMPLETE
+        elif self.state == Collaboration.BEING_REVIEWED:
+            if collaborator.role == Collaborator.REVIEWER:
+                if self.team.workflow.needs_approval():
+                    new_state = Collaboration.NEEDS_APPROVER
+                else:
+                    new_state = Collaboration.COMPLETE
+        elif self.state == Collaboration.BEING_APPROVED:
+            if collaborator.role == Collaborator.APPROVER:
+                new_state = Collaboration.COMPLETE
+        if new_state is not None:
+            self.state = new_state
+            self.save()
 
 class Collaborator(models.Model):
     """User who is part of a collaboration."""
 
-    ROLE_SUBTITLER = "S"
-    ROLE_REVIEWER = "R"
-    ROLE_APPROVER = "A"
-    ROLES = [
-        (ROLE_SUBTITLER, _('Subtitler')),
-        (ROLE_REVIEWER, _('Reviewer')),
-        (ROLE_APPROVER, _('Approver')),
+    SUBTITLER = "S"
+    REVIEWER = "R"
+    APPROVER = "A"
+    ROLE_CHOICES = [
+        (SUBTITLER, _('Subtitler')),
+        (REVIEWER, _('Reviewer')),
+        (APPROVER, _('Approver')),
     ]
-
-    # Make now as a plain function so we can patch it in the unittests
-    @staticmethod
-    def now():
-        return datetime.datetime.now()
 
     collaboration = models.ForeignKey(Collaboration)
     user = models.ForeignKey(User)
-    role = models.CharField(max_length=1, choices=ROLES)
+    role = models.CharField(max_length=1, choices=ROLE_CHOICES)
     start_date = models.DateTimeField()
     endorsement_date = models.DateTimeField(blank=True, null=True)
 
@@ -2295,15 +2318,18 @@ class Collaborator(models.Model):
             kwargs['start_date'] = Collaborator.now()
         return models.Model.__init__(self, *args, **kwargs)
 
+    # Make now as a plain function so we can patch it in the unittests
+    @staticmethod
+    def now():
+        return datetime.datetime.now()
+
     @property
     def endorsed(self):
         return self.endorsement_date is not None
 
-    def mark_endorsed(self, commit=True):
-        """Mark this collaboration endorsed by this collaborator.  """
+    def mark_endorsed(self):
         self.endorsement_date = Collaborator.now()
-        if commit:
-            self.save()
+        self.save()
 
 class CollaborationHistory(models.Model):
     """Tracks changes to a collaboration."""

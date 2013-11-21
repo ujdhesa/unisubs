@@ -21,7 +21,8 @@ from __future__ import absolute_import
 from django.test import TestCase
 
 from utils.factories import *
-from teams.models import CollaborationLanguage, CollaborationWorkflow
+from teams.models import (Collaboration, CollaborationLanguage,
+                          CollaborationWorkflow)
 
 class CollaborationLanguageTestCase(TestCase):
     def setUp(self):
@@ -62,8 +63,7 @@ class CollaborationLanguageTestCase(TestCase):
         self.update_languages(['en', 'fr'])
         self.check_languages_for_member(member, ['en', 'fr'])
 
-
-class CollaborationStateLabelTestCase(TestCase):
+class CollaborationStateTestCase(TestCase):
     def setUp(self):
         self.team = TeamFactory.create(workflow_style="C")
         CollaborationWorkflowFactory.create(
@@ -75,75 +75,67 @@ class CollaborationStateLabelTestCase(TestCase):
         self.reviewer = TeamMemberFactory.create(team=self.team).user
         self.approver = TeamMemberFactory.create(team=self.team).user
 
-    def make_collaborator(self, user, role):
-        return CollaboratorFactory.create(collaboration=self.collaboration,
-                                          user=user, role=role)
-
     def set_completion_policy(self, policy):
         self.team.workflow.completion_policy = policy
         self.team.workflow.save()
 
-    def check_state_label(self, state_label):
-        self.collaboration.clear_cached_collaborators()
-        self.assertEquals(unicode(self.collaboration.state_label()),
-                          state_label)
+    def check_state(self, collaboration_state):
+        self.assertEquals(self.collaboration.state, collaboration_state)
 
     def check_complete(self):
-        self.check_state_label('complete')
+        self.assertEquals(self.collaboration.state, Collaboration.COMPLETE)
 
     def check_not_complete(self):
-        self.collaboration.clear_cached_collaborators()
-        self.assertNotEquals(unicode(self.collaboration.state_label()),
-                             'complete')
+        self.assertNotEquals(self.collaboration.state, Collaboration.COMPLETE)
 
-    def test_labels_before_complete(self):
-        self.check_state_label('needs subtitler')
+    def test_states_before_complete(self):
+        self.check_state(Collaboration.NEEDS_SUBTITLER)
 
-        subtitle_collaborator = self.make_collaborator(self.subtitler, 'S')
-        self.check_state_label('being subtitled')
+        self.collaboration.add_collaborator(self.subtitler, 'S')
+        self.check_state(Collaboration.BEING_SUBTITLED)
 
-        subtitle_collaborator.mark_endorsed()
-        self.check_state_label('needs reviewer')
+        self.collaboration.mark_endorsed(self.subtitler)
+        self.check_state(Collaboration.NEEDS_REVIEWER)
 
-        review_collaborator = self.make_collaborator(self.reviewer, 'R')
-        self.check_state_label('being reviewed')
+        self.collaboration.add_collaborator(self.reviewer, 'R')
+        self.check_state(Collaboration.BEING_REVIEWED)
 
-        review_collaborator.mark_endorsed()
-        self.check_state_label('needs approver')
+        self.collaboration.mark_endorsed(self.reviewer)
+        self.check_state(Collaboration.NEEDS_APPROVER)
 
-        approve_collaborator = self.make_collaborator(self.approver, 'A')
-        self.check_state_label('being approved')
+        self.collaboration.add_collaborator(self.approver, 'A')
+        self.check_state(Collaboration.BEING_APPROVED)
 
     def test_complete_anyone(self):
         self.set_completion_policy(CollaborationWorkflow.COMPLETION_ANYONE)
         self.check_not_complete()
-        subtitle_collaborator = self.make_collaborator(self.subtitler, 'S')
+        self.collaboration.add_collaborator(self.subtitler, 'S')
         self.check_not_complete()
-        subtitle_collaborator.mark_endorsed()
+        self.collaboration.mark_endorsed(self.subtitler)
         self.check_complete()
 
     def test_complete_review(self):
         self.set_completion_policy(CollaborationWorkflow.COMPLETION_REVIEWER)
-        subtitle_collaborator = self.make_collaborator(self.subtitler, 'S')
+        self.collaboration.add_collaborator(self.subtitler, 'S')
         self.check_not_complete()
-        subtitle_collaborator.mark_endorsed()
+        self.collaboration.mark_endorsed(self.subtitler)
         self.check_not_complete()
-        review_collaborator = self.make_collaborator(self.reviewer, 'R')
+        self.collaboration.add_collaborator(self.reviewer, 'R')
         self.check_not_complete()
-        review_collaborator.mark_endorsed()
+        self.collaboration.mark_endorsed(self.reviewer)
         self.check_complete()
 
     def test_complete_approval(self):
         self.set_completion_policy(CollaborationWorkflow.COMPLETION_APPROVER)
-        subtitle_collaborator = self.make_collaborator(self.subtitler, 'S')
+        self.collaboration.add_collaborator(self.subtitler, 'S')
         self.check_not_complete()
-        subtitle_collaborator.mark_endorsed()
+        self.collaboration.mark_endorsed(self.subtitler)
         self.check_not_complete()
-        review_collaborator = self.make_collaborator(self.reviewer, 'R')
+        self.collaboration.add_collaborator(self.reviewer, 'R')
         self.check_not_complete()
-        review_collaborator.mark_endorsed()
+        self.collaboration.mark_endorsed(self.reviewer)
         self.check_not_complete()
-        approve_collaborator = self.make_collaborator(self.approver, 'A')
+        self.collaboration.add_collaborator(self.approver, 'A')
         self.check_not_complete()
-        approve_collaborator.mark_endorsed()
+        self.collaboration.mark_endorsed(self.approver)
         self.check_complete()
