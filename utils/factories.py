@@ -23,6 +23,7 @@ import factory
 from auth.models import CustomUser, UserLanguage
 from teams.models import (Team, TeamMember, TeamVideo, CollaborationWorkflow,
                           Collaboration, Collaborator)
+from teams import workflow
 from videos.models import VideoUrl, Video, VIDEO_TYPE_HTML5
 
 class UserFactory(factory.DjangoModelFactory):
@@ -74,6 +75,9 @@ class TeamFactory(factory.DjangoModelFactory):
             # this forces the default project to be created
             team.default_project
         return team
+
+class CollaborationTeamFactory(TeamFactory):
+    workflow_style = workflow.WORKFLOW_COLLABORATION
 
 class TeamMemberFactory(factory.DjangoModelFactory):
     FACTORY_FOR = TeamMember

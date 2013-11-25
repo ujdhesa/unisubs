@@ -2237,7 +2237,7 @@ class Collaboration(models.Model):
     # team doing the work.  Note that the video can be owned by a different
     # team in the case of shared projects.  Use owning_team() to get the team
     # that owns the video.
-    team = models.ForeignKey(Team)
+    team = models.ForeignKey(Team, null=True)
 
     class Meta:
         unique_together = ('team_video', 'language_code')
@@ -2245,7 +2245,7 @@ class Collaboration(models.Model):
     def owning_team(self):
         return self.team_video.team
 
-    def add_collaborator(self, user, role):
+    def add_collaborator(self, team_member, role):
         """Add a new collaborator to this collaboration.
 
         This method creates the Collaborator and potentially updates our
@@ -2253,8 +2253,13 @@ class Collaboration(models.Model):
 
         :returns: Collaborator object.
         """
+        if self.team_id is not None and self.team_id != team_member.team_id:
+            raise ValueError("%s is not a member of %s" % (team_member,
+                                                           self.team))
+
         collaborator = Collaborator.objects.create(collaboration=self,
-                                                   user=user, role=role)
+                                                   user=team_member.user,
+                                                   role=role)
         # Create a lookup table that maps (old_state, role) -> new_state
         state_change_map = {
             (Collaboration.NEEDS_SUBTITLER,
@@ -2264,15 +2269,21 @@ class Collaboration(models.Model):
             (Collaboration.NEEDS_APPROVER,
              Collaborator.APPROVER): Collaboration.BEING_APPROVED,
         }
+        needs_save = False
         new_state = state_change_map.get((self.state, role))
         if new_state is not None:
             self.state = new_state
+            needs_save = True
+        if self.team_id is None:
+            self.team_id = team_member.team_id
+            needs_save = True
+        if needs_save:
             self.save()
         return collaborator
 
-    def mark_endorsed(self, user):
+    def mark_endorsed(self, team_member):
         """Mark this collaboration endorsed by a user."""
-        collaborator = self.collaborator_set.get(user=user)
+        collaborator = self.collaborator_set.get(user=team_member.user)
         collaborator.mark_endorsed()
         # Check if the endorsement changes our state
         new_state = None

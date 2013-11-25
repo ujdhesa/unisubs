@@ -24,9 +24,14 @@ from utils.factories import *
 from teams.models import (Collaboration, CollaborationLanguage,
                           CollaborationWorkflow)
 
+# make Collaborator.ROLE values global for easier typing
+SUBTITLER = Collaborator.SUBTITLER
+REVIEWER = Collaborator.REVIEWER
+APPROVER = Collaborator.APPROVER
+
 class CollaborationLanguageTestCase(TestCase):
     def setUp(self):
-        self.team = TeamFactory.create()
+        self.team = CollaborationTeamFactory.create()
 
     def check_languages(self, correct_languages):
         collab_langs = CollaborationLanguage.objects.for_team(self.team)
@@ -65,15 +70,15 @@ class CollaborationLanguageTestCase(TestCase):
 
 class CollaborationStateTestCase(TestCase):
     def setUp(self):
-        self.team = TeamFactory.create(workflow_style="C")
+        self.team = CollaborationTeamFactory.create()
         CollaborationWorkflowFactory.create(
             team=self.team,
             completion_policy=CollaborationWorkflow.COMPLETION_APPROVER)
         self.collaboration = CollaborationFactory.create(
             team=self.team)
-        self.subtitler = TeamMemberFactory.create(team=self.team).user
-        self.reviewer = TeamMemberFactory.create(team=self.team).user
-        self.approver = TeamMemberFactory.create(team=self.team).user
+        self.subtitler = TeamMemberFactory.create(team=self.team)
+        self.reviewer = TeamMemberFactory.create(team=self.team)
+        self.approver = TeamMemberFactory.create(team=self.team)
 
     def set_completion_policy(self, policy):
         self.team.workflow.completion_policy = policy
@@ -91,51 +96,92 @@ class CollaborationStateTestCase(TestCase):
     def test_states_before_complete(self):
         self.check_state(Collaboration.NEEDS_SUBTITLER)
 
-        self.collaboration.add_collaborator(self.subtitler, 'S')
+        self.collaboration.add_collaborator(self.subtitler, SUBTITLER)
         self.check_state(Collaboration.BEING_SUBTITLED)
 
         self.collaboration.mark_endorsed(self.subtitler)
         self.check_state(Collaboration.NEEDS_REVIEWER)
 
-        self.collaboration.add_collaborator(self.reviewer, 'R')
+        self.collaboration.add_collaborator(self.reviewer, REVIEWER)
         self.check_state(Collaboration.BEING_REVIEWED)
 
         self.collaboration.mark_endorsed(self.reviewer)
         self.check_state(Collaboration.NEEDS_APPROVER)
 
-        self.collaboration.add_collaborator(self.approver, 'A')
+        self.collaboration.add_collaborator(self.approver, APPROVER)
         self.check_state(Collaboration.BEING_APPROVED)
 
     def test_complete_anyone(self):
         self.set_completion_policy(CollaborationWorkflow.COMPLETION_ANYONE)
         self.check_not_complete()
-        self.collaboration.add_collaborator(self.subtitler, 'S')
+        self.collaboration.add_collaborator(self.subtitler, SUBTITLER)
         self.check_not_complete()
         self.collaboration.mark_endorsed(self.subtitler)
         self.check_complete()
 
     def test_complete_review(self):
         self.set_completion_policy(CollaborationWorkflow.COMPLETION_REVIEWER)
-        self.collaboration.add_collaborator(self.subtitler, 'S')
+        self.collaboration.add_collaborator(self.subtitler, SUBTITLER)
         self.check_not_complete()
         self.collaboration.mark_endorsed(self.subtitler)
         self.check_not_complete()
-        self.collaboration.add_collaborator(self.reviewer, 'R')
+        self.collaboration.add_collaborator(self.reviewer, REVIEWER)
         self.check_not_complete()
         self.collaboration.mark_endorsed(self.reviewer)
         self.check_complete()
 
     def test_complete_approval(self):
         self.set_completion_policy(CollaborationWorkflow.COMPLETION_APPROVER)
-        self.collaboration.add_collaborator(self.subtitler, 'S')
+        self.collaboration.add_collaborator(self.subtitler, SUBTITLER)
         self.check_not_complete()
         self.collaboration.mark_endorsed(self.subtitler)
         self.check_not_complete()
-        self.collaboration.add_collaborator(self.reviewer, 'R')
+        self.collaboration.add_collaborator(self.reviewer, REVIEWER)
         self.check_not_complete()
         self.collaboration.mark_endorsed(self.reviewer)
         self.check_not_complete()
-        self.collaboration.add_collaborator(self.approver, 'A')
+        self.collaboration.add_collaborator(self.approver, APPROVER)
         self.check_not_complete()
         self.collaboration.mark_endorsed(self.approver)
         self.check_complete()
+
+class CollaborationTeamTestCase(TestCase):
+    # Test the team-related fields of Collaboration.  This is a bit tricky
+    # because the team that owns the team video may or may not actually be the
+    # team that's working on the collaboration
+
+    def setUp(self):
+        self.team = CollaborationTeamFactory.create()
+        self.collaboration = CollaborationFactory.create(
+            team_video__team=self.team)
+
+    def test_team_is_null_before_collaborators(self):
+        self.assertEquals(self.collaboration.team, None)
+
+    def test_owning_team_works_on_collaboration(self):
+        member = TeamMemberFactory.create(team=self.team)
+        self.collaboration.add_collaborator(member, SUBTITLER)
+        self.assertEquals(self.collaboration.team, self.team)
+
+    def test_other_team_works_on_collaboration(self):
+        other_team = CollaborationTeamFactory.create()
+        member = TeamMemberFactory.create(team=other_team)
+        self.collaboration.add_collaborator(member, SUBTITLER)
+        self.assertEquals(self.collaboration.team, other_team)
+
+    def test_only_team_members_can_join(self):
+        # test that only members of the team working on the collaboration can
+        # join it.
+        self.team.workflow.only_1_subtitler = False
+        self.team.workflow.save()
+
+        member = TeamMemberFactory.create(team=self.team)
+        self.collaboration.add_collaborator(member, SUBTITLER)
+        self.assertEquals(self.collaboration.team, self.team)
+
+        # if a user from another team tries to join the collaboration, it
+        # should fail.
+        other_team = CollaborationTeamFactory.create()
+        self.assertRaises(ValueError, self.collaboration.add_collaborator,
+                          TeamMemberFactory.create(team=other_team),
+                          SUBTITLER)
