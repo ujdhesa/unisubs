@@ -49,9 +49,8 @@ from teams.forms import (
     AddTeamVideosFromFeedForm, TaskAssignForm, SettingsForm, TaskCreateForm,
     PermissionsForm, WorkflowForm, CollaborationWorkflowForm, InviteForm,
     TaskDeleteForm, GuidelinesMessagesForm, RenameableSettingsForm,
-    ProjectForm, LanguagesForm, CollaborationLanguagesForm,
-    DeleteLanguageForm, MoveTeamVideoForm, TaskUploadForm,
-    make_billing_report_form,
+    ProjectForm, LanguagesForm, DeleteLanguageForm, MoveTeamVideoForm,
+    TaskUploadForm, make_billing_report_form,
 )
 from teams.models import (
     Team, TeamMember, Invite, Application, TeamVideo, Task, Project,
@@ -393,7 +392,9 @@ def settings_languages(request, slug):
         return HttpResponseRedirect(team.get_absolute_url())
 
     if team.workflow_style == workflow.WORKFLOW_COLLABORATION:
-        return settings_languages_collab(request, team)
+        # for collaboration workflows, the language form is part of the
+        # workflow page
+        raise Http404
     else:
         return settings_languages_tasks(request, team)
 
@@ -416,29 +417,6 @@ def settings_languages_tasks(request, team):
             return HttpResponseRedirect(request.path)
     else:
         form = LanguagesForm(team, initial=initial)
-
-    return { 'team': team, 'form': form }
-
-@render_to('teams/settings-languages-collab.html')
-def settings_languages_collab(request, team):
-    initial = {
-        'languages': [
-            tcl.language_code for tcl in
-            CollaborationLanguage.objects.for_team(team)
-        ],
-    }
-
-    if request.POST:
-        form = CollaborationLanguagesForm(request.POST, initial=initial)
-
-        if form.is_valid():
-            CollaborationLanguage.objects.update_for_team(
-                team, form.cleaned_data['languages'])
-
-            messages.success(request, _(u'Settings saved.'))
-            return HttpResponseRedirect(request.path)
-    else:
-        form = CollaborationLanguagesForm(initial=initial)
 
     return { 'team': team, 'form': form }
 

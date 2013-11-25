@@ -24,7 +24,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from messages.forms import TeamAdminPageMessageForm
 from teams.models import (
-    Team, TeamMember, TeamVideo, TaskWorkflow, CollaborationWorkflow, Task,
+    Team, TeamMember, TeamVideo, TaskWorkflow, CollaborationWorkflow,
+    CollaborationLanguage, Task,
     Setting, MembershipNarrowing, Project, TeamLanguagePreference,
     TeamNotificationSetting, BillingReport, Partner, Application,
     ApplicationInvalidException, Invite, BillingRecord
@@ -113,6 +114,9 @@ class CollaborationWorkflowAdmin(admin.ModelAdmin):
     search_fields = ('team__name',)
     raw_id_fields = ('team',)
     ordering = ('-created',)
+
+class CollaborationLanguageAdmin(admin.ModelAdmin):
+    list_display = ('team', 'language_code')
 
 class TaskAdmin(admin.ModelAdmin):
     # We specifically pull old/new subtitle version, assignee, team_video, team,
@@ -259,12 +263,12 @@ class BillingRecordAdmin(admin.ModelAdmin):
                     'new_subtitle_version', 'video' ,
     )
 
-
 admin.site.register(TeamMember, TeamMemberAdmin)
 admin.site.register(Team, TeamAdmin)
 admin.site.register(TeamVideo, TeamVideoAdmin)
 admin.site.register(TaskWorkflow, TaskWorkflowAdmin)
 admin.site.register(CollaborationWorkflow, CollaborationWorkflowAdmin)
+admin.site.register(CollaborationLanguage, CollaborationLanguageAdmin)
 admin.site.register(Task, TaskAdmin)
 admin.site.register(TeamLanguagePreference, TeamLanguagePreferenceAdmin)
 admin.site.register(MembershipNarrowing, MembershipNarrowingAdmin)

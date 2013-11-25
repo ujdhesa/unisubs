@@ -28,7 +28,7 @@ from django.utils.translation import ugettext_lazy as _
 from apps.subtitles.forms import SubtitlesUploadForm
 from apps.teams.models import (
     Team, TeamMember, TeamVideo, Task, Project, TaskWorkflow, Invite,
-    BillingReport
+    BillingReport, CollaborationLanguage,
 )
 from apps.teams.permissions import (
     roles_user_can_invite, can_delete_task, can_add_video, can_perform_task,
@@ -44,7 +44,8 @@ from apps.videos.tasks import import_videos_from_feed
 from teams import workflow
 from utils.forms import ErrorableModelForm
 from utils.forms.unisub_video_form import UniSubBoundVideoField
-from utils.translation import get_language_choices, language_choices_lazy
+from utils.translation import (get_language_choices, language_choices_lazy,
+                               SUPPORTED_LANGUAGE_CODES)
 from utils.validators import MaxFileSizeValidator
 
 
@@ -511,12 +512,21 @@ class CollaborationWorkflowForm(forms.Form):
     This form is basically a ModelForm, but it combines fields for Team and
     CollaborationWorkflow, so using ModelForm isn't that helpful.
     """
+    LANGUAGE_RADIO_CHOICES = [
+        ('all', _('All languages')),
+        ('some', _('These languages:')),
+    ]
+
     membership_policy = forms.ChoiceField(
         choices=Team.MEMBERSHIP_POLICY_CHOICES,
         initial=Team.OPEN)
     video_policy = forms.ChoiceField(
         choices=Team.VIDEO_POLICY_CHOICES,
         initial=Team.VP_MEMBER)
+    language_radio = forms.ChoiceField(choices=LANGUAGE_RADIO_CHOICES,
+                                       widget=forms.RadioSelect)
+    language_select = forms.MultipleChoiceField(required=False,
+                                                choices=language_choices_lazy)
     completion_policy = forms.ChoiceField(
         choices=workflow.CollaborationWorkflow.COMPLETION_POLICY_CHOICES,
         initial=workflow.CollaborationWorkflow.COMPLETION_ANYONE)
@@ -552,7 +562,7 @@ class CollaborationWorkflowForm(forms.Form):
         'only_1_approver',
     ]
 
-    def __init__(self, team=None, data=None):
+    def __init__(self, team, data=None):
         self.team = team
         try:
             self.workflow = workflow.CollaborationWorkflow.objects.get(
@@ -572,6 +582,23 @@ class CollaborationWorkflowForm(forms.Form):
                       self.WORKFLOW_BOOLEAN_FIELDS):
             self.fields[field].initial = getattr(self.workflow, field)
 
+        current_languages = [
+            tcl.language_code for tcl in
+            CollaborationLanguage.objects.for_team(self.team)
+        ]
+        if (current_languages and
+            set(current_languages) != SUPPORTED_LANGUAGE_CODES):
+            self.fields['language_select'].initial = current_languages
+            self.fields['language_radio'].initial = 'some'
+        else:
+            self.fields['language_radio'].initial = 'all'
+
+    def clean_language_select(self):
+        if (self.cleaned_data['language_radio'] == 'some' and
+            not self.cleaned_data['language_select']):
+            raise forms.ValidationError("No languages selected")
+        return self.cleaned_data['language_select']
+
     def save(self):
         for field in self.TEAM_FIELDS:
             setattr(self.team, field, self.cleaned_data[field])
@@ -582,6 +609,19 @@ class CollaborationWorkflowForm(forms.Form):
         for field in self.WORKFLOW_BOOLEAN_FIELDS:
             setattr(self.workflow, field, bool(self.cleaned_data[field]))
         self.workflow.save()
+
+        self.save_languages()
+
+    def save_languages(self):
+        if self.cleaned_data['language_radio'] == 'all':
+            language_codes = [c[0] for c in get_language_choices()]
+        elif self.cleaned_data['language_radio'] == 'some':
+            language_codes = self.cleaned_data['language_select']
+        else:
+            raise ValueError("unknown value for language_radio: %s" %
+                             self.cleaned_data['language_radio'])
+        CollaborationLanguage.objects.update_for_team(
+            self.team, language_codes)
 
 class LanguagesForm(forms.Form):
     preferred = forms.MultipleChoiceField(required=False, choices=())
@@ -602,10 +642,6 @@ class LanguagesForm(forms.Form):
             raise forms.ValidationError(_(u'You cannot blacklist a preferred language.'))
 
         return self.cleaned_data
-
-class CollaborationLanguagesForm(forms.Form):
-    languages = forms.MultipleChoiceField(required=False,
-                                          choices=language_choices_lazy)
 
 class InviteForm(forms.Form):
     user_id = forms.CharField(required=False, widget=forms.Select)

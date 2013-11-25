@@ -866,6 +866,22 @@ var Site = function(Site) {
             $revperm.trigger('change');
             $appperm.trigger('change');
         },
+        team_settings_collaboration_workflow: function() {
+            $('select#id_language_select').chosen();
+            $("input[name='language_radio']").change(function(e){
+                if($(this).val() == 'some') {
+                    $('#language_select select')
+                    .removeAttr('disabled')
+                    .trigger("liszt:updated");
+                } else {
+                    $('#language_select select')
+                    .attr('disabled', 'disabled')
+                    .trigger("liszt:updated");
+
+                }
+            });
+            $("input[name='language_radio']:checked").trigger('change');
+        },
         team_settings_languages: function() {
             that.Utils.chosenify();
         },

@@ -313,6 +313,12 @@ class Team(models.Model):
         if hasattr(self, '_workflow'):
             del self._workflow
 
+    def collaboration_enabled(self):
+        return self.workflow_style == workflow.WORKFLOW_COLLABORATION
+
+    def tasks_enabled(self):
+        return self.workflow_style == workflow.WORKFLOW_TASKS
+
     @property
     def auth_provider(self):
         """Return the authentication provider class for this Team, or None.

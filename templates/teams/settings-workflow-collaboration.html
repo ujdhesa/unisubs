@@ -5,7 +5,7 @@
     {{ team }} {% trans 'Settings' %} | Amara
 {% endblock %}
 
-{% block html_attrs %}id="team_settings_permissions"{% endblock %}
+{% block html_attrs %}id="team_settings_collaboration_workflow"{% endblock %}
 
 {% block view_content %}
 
@@ -30,6 +30,24 @@
 
                 <label for="id_video_policy">{% trans 'Who can add/remove videos?' %}</label>
                 {{ form.video_policy }}
+            </fieldset>
+
+            <fieldset id="languages">
+                <legend>{% trans 'Auto-Create Collaborations For:' %}</legend>
+                {% for choice in form.language_radio %}
+                    <div>
+                        <label>
+                            {{ choice.tag }}
+                            {{ choice.choice_label }}
+                        </label>
+                        {% if choice.choice_value == 'some' %}
+                            {{ form.language_select.errors }}
+                            <div id="language_select">
+                                {{ form.language_select }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
             </fieldset>
 
             <fieldset>
