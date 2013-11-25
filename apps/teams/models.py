@@ -26,6 +26,7 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.core.files import File
+from django.db import connection
 from django.db import models
 from django.db.models.signals import post_save, post_delete, pre_delete
 from django.http import Http404
@@ -1580,6 +1581,7 @@ class CollaborationLanguageManager(models.Manager):
         self.bulk_create([CollaborationLanguage(
             team=team, project=None, language_code=lc)
             for lc in to_create])
+        Collaboration.objects.update_auto_created(team, language_codes)
 
     def languages_for_member(self, team_member):
         """Get preferred languages for a team member.
@@ -2206,6 +2208,53 @@ class Partner(models.Model):
     def is_admin(self, user):
         return user in self.admins.all()
 
+class CollaborationManager(models.Manager):
+    def update_auto_created(self, team, language_codes):
+        """Update the auto-created collaborations.
+
+        This method ensures that we have the correct auto-created
+        collaborations after the team's CollaborationLanguages change.
+
+        For each team video/language code combination, we will ensure that
+        there is a collaboration for it.
+
+        Previously created collaborations for other languages will be deleted.
+        """
+        cursor = connection.cursor()
+        self._delete_auto_created(cursor, team, language_codes)
+        self._insert_auto_created(cursor, team, language_codes)
+
+    def _delete_auto_created(self, cursor, team, language_codes):
+        # This is a fairly crazy query, mostly because mysql doesn't let you
+        # use the table you're deleting from in the a subquery, unless you
+        # alias it.  See stack overflow question #4429319
+        sql = ("DELETE FROM teams_collaboration "
+               "WHERE id IN (SELECT id FROM ("
+               "SELECT collaboration.id "
+               "FROM teams_collaboration collaboration "
+               "LEFT JOIN teams_teamvideo tv "
+               "ON collaboration.team_video_id=tv.id "
+               "LEFT JOIN teams_collaborator collaborator "
+               "ON collaborator.collaboration_id=collaboration.id "
+               "WHERE tv.team_id=%s AND "
+               "collaboration.language_code NOT IN ({0}) AND "
+               "collaborator.id IS NULL) as foo)").format(
+                   ", ".join("%s" for c in language_codes))
+        cursor.execute(sql, (team.id,) + tuple(language_codes))
+
+    def _insert_auto_created(self, cursor, team, language_codes):
+        sql = ("INSERT INTO teams_collaboration(team_video_id, "
+               "language_code, state, last_joined, team_id) "
+               "SELECT tv.id, %s, %s, NULL, NULL "
+               " FROM teams_teamvideo tv "
+               " LEFT JOIN teams_collaboration c "
+               " ON c.team_video_id=tv.id AND c.language_code=%s "
+               " WHERE tv.team_id=%s AND c.id IS NULL")
+        for language_code in language_codes:
+            values = (language_code, Collaboration.NEEDS_SUBTITLER,
+                      language_code, team.id)
+            cursor.execute(sql, values)
+
 class Collaboration(models.Model):
     """Tracks subtitling work for a video language."""
 
@@ -2238,6 +2287,8 @@ class Collaboration(models.Model):
     # team in the case of shared projects.  Use owning_team() to get the team
     # that owns the video.
     team = models.ForeignKey(Team, null=True)
+
+    objects = CollaborationManager()
 
     class Meta:
         unique_together = ('team_video', 'language_code')

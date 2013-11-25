@@ -185,3 +185,36 @@ class CollaborationTeamTestCase(TestCase):
         self.assertRaises(ValueError, self.collaboration.add_collaborator,
                           TeamMemberFactory.create(team=other_team),
                           SUBTITLER)
+
+class CollaborationCreationTestCase(TestCase):
+    def setUp(self):
+        self.team = CollaborationTeamFactory.create()
+        self.team_video = TeamVideoFactory.create(team=self.team)
+
+    def check_collaboration_languages(self, team_video, correct_languages):
+        collaborations = self.team_video.collaboration_set.all()
+        self.assertEquals(set(c.language_code for c in collaborations),
+                          set(correct_languages))
+
+    def test_create_on_language_update(self):
+        CollaborationLanguage.objects.update_for_team(self.team, ['en', 'es'])
+        self.check_collaboration_languages(self.team_video, ['en', 'es'])
+
+    def test_delete_on_language_update(self):
+        CollaborationLanguage.objects.update_for_team(self.team, ['en', 'es'])
+        self.check_collaboration_languages(self.team_video, ['en', 'es'])
+        # when we change the language, we should delete collaborations
+        CollaborationLanguage.objects.update_for_team(self.team, ['fr', 'de'])
+        self.check_collaboration_languages(self.team_video, ['fr', 'de'])
+        # but if collaborators have joined, we shouldn't delete them
+        user = TeamMemberFactory.create(team=self.team)
+        collaboration = self.team_video.collaboration_set.get(
+            language_code='fr')
+        collaboration.add_collaborator(user, Collaborator.SUBTITLER)
+        CollaborationLanguage.objects.update_for_team(self.team, ['pt-br'])
+        self.check_collaboration_languages(self.team_video, ['fr', 'pt-br'])
+
+    def test_create_on_new_teamvideo(self):
+        CollaborationLanguage.objects.update_for_team(self.team, ['en', 'es'])
+        new_team_video = TeamVideoFactory.create(team=self.team)
+        self.check_collaboration_languages(new_team_video, ['en', 'es'])
