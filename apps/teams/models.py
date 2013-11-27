@@ -613,6 +613,21 @@ class ProjectManager(models.Manager):
             team = Team.objects.get(slug=team_identifier)
         return Project.objects.filter(team=team).exclude(name=Project.DEFAULT_NAME)
 
+    def all_projects_for_team(self, team):
+        """Get all projects that a team is working
+
+        This includes:
+            - The default project
+            - Other team projects
+            - Projects shared with the team
+        """
+        return self.extra(where=[
+            'team_id=%s OR EXISTS '
+            '(SELECT 1 FROM teams_project_shared_teams shared_map '
+            'WHERE shared_map.team_id=%s AND '
+            'shared_map.project_id=teams_project.id)'],
+            params=(team.id, team.id))
+
 class Project(models.Model):
     # All tvs belong to a project, wheather the team has enabled them or not
     # the default project is just a convenience UI that pretends to be part of
@@ -2215,6 +2230,62 @@ class Partner(models.Model):
         return user in self.admins.all()
 
 class CollaborationManager(models.Manager):
+    def for_dashboard(self, team_member):
+        """Get collaborations to show for a user's dashboard.
+
+        Returns a dict with the following keys:
+
+            working_on - Collaborations the member is a part of
+            can_start - Unstarted collaborations the member can start
+            can_join - Active collaborations the member can join
+        """
+        user_languages = team_member.user.get_language_codes()
+        working_on = list(
+            self.filter(team_id=team_member.team_id)
+            .exclude(state=Collaboration.COMPLETE)
+            .extra(where=[
+                'EXISTS (SELECT 1 '
+                'FROM teams_collaborator c '
+                'WHERE c.collaboration_id=teams_collaboration.id '
+                'AND c.user_id=%s)'],
+                params=(team_member.user_id,))
+        )
+
+        projects = list(Project.objects.all_projects_for_team(
+            team_member.team))
+        can_start = list(
+            self.filter(team_video__project__in=projects,
+                        state=Collaboration.NOT_STARTED,
+                        language_code__in=user_languages)
+        )
+
+        return {
+            'working_on': working_on,
+            'can_start': can_start,
+            'can_join': self._calc_can_join(team_member, working_on,
+                                            user_languages),
+        }
+
+    def _calc_can_join(self, team_member, working_on, user_languages):
+        states_allowed = [
+            Collaboration.NEEDS_REVIEWER
+        ]
+        workflow = team_member.team.workflow
+        if not workflow.only_1_subtitler:
+            states_allowed.append(Collaboration.BEING_SUBTITLED)
+        if not workflow.only_1_reviewer:
+            states_allowed.append(Collaboration.BEING_REVIEWED)
+        if workflow.member_can_approve(team_member):
+            states_allowed.append(Collaboration.NEEDS_APPROVER)
+            if not workflow.only_1_approver:
+                states_allowed.append(Collaboration.BEING_APPROVED)
+
+        return (self
+                .filter(team=team_member.team,
+                        state__in=states_allowed,
+                        language_code__in=user_languages)
+                .exclude(id__in=[c.id for c in working_on]))
+
     def update_auto_created(self, team, language_codes):
         """Update the auto-created collaborations.
 
@@ -2257,14 +2328,14 @@ class CollaborationManager(models.Manager):
                " ON c.team_video_id=tv.id AND c.language_code=%s "
                " WHERE tv.team_id=%s AND c.id IS NULL")
         for language_code in language_codes:
-            values = (language_code, Collaboration.NEEDS_SUBTITLER,
+            values = (language_code, Collaboration.NOT_STARTED,
                       language_code, team.id)
             cursor.execute(sql, values)
 
 class Collaboration(models.Model):
     """Tracks subtitling work for a video language."""
 
-    NEEDS_SUBTITLER = 's'
+    NOT_STARTED = 's'
     BEING_SUBTITLED = 'S'
     NEEDS_REVIEWER = 'r'
     BEING_REVIEWED = 'R'
@@ -2273,7 +2344,7 @@ class Collaboration(models.Model):
     COMPLETE = 'C'
 
     STATE_CHOICES = [
-        (NEEDS_SUBTITLER, 'needs subtitler'),
+        (NOT_STARTED, 'needs subtitler'),
         (BEING_SUBTITLED, 'being subtitled'),
         (NEEDS_REVIEWER, 'needs reviewer'),
         (BEING_REVIEWED, 'being reviewed'),
@@ -2286,7 +2357,7 @@ class Collaboration(models.Model):
     team_video = models.ForeignKey(TeamVideo)
     language_code = models.CharField(max_length=16, choices=ALL_LANGUAGES)
     state = models.CharField(max_length=1, choices=STATE_CHOICES,
-                             default=NEEDS_SUBTITLER)
+                             default=NOT_STARTED)
     last_joined = models.DateTimeField(null=True, blank=True, default=None,
                                        db_index=True)
     # team doing the work.  Note that the video can be owned by a different
@@ -2298,6 +2369,10 @@ class Collaboration(models.Model):
 
     class Meta:
         unique_together = ('team_video', 'language_code')
+
+    def __unicode__(self):
+        return u'%s collaboration for %s' % (self.get_language_code_display(),
+                                             self.team_video)
 
     def owning_team(self):
         return self.team_video.team
@@ -2319,7 +2394,7 @@ class Collaboration(models.Model):
                                                    role=role)
         # Create a lookup table that maps (old_state, role) -> new_state
         state_change_map = {
-            (Collaboration.NEEDS_SUBTITLER,
+            (Collaboration.NOT_STARTED,
              Collaborator.SUBTITLER): Collaboration.BEING_SUBTITLED,
             (Collaboration.NEEDS_REVIEWER,
              Collaborator.REVIEWER): Collaboration.BEING_REVIEWED,
@@ -2331,8 +2406,8 @@ class Collaboration(models.Model):
         if new_state is not None:
             self.state = new_state
             needs_save = True
-        if self.team_id is None:
-            self.team_id = team_member.team_id
+        if self.team is None:
+            self.team = team_member.team
             needs_save = True
         if needs_save:
             self.save()

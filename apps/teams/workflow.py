@@ -47,6 +47,9 @@ from comments.models import Comment
 from messages import tasks as notifier
 from videos.tasks import upload_subtitles_to_original_service
 from teams import tasks
+from teams.permissions_const import (
+    ROLE_OWNER, ROLE_ADMIN, ROLE_MANAGER, ROLE_CONTRIBUTOR
+)
 from subtitles.models import SubtitleVersion, SubtitleLanguage
 from videos.models import SubtitleVersion as OldSubtitleVersion
 from videos.models import VideoUrl
@@ -891,6 +894,9 @@ class CollaborationWorkflow(models.Model):
 
     def needs_approval(self):
         return self.completion_policy == self.COMPLETION_APPROVER
+
+    def member_can_approve(self, member):
+        return member.role in (ROLE_OWNER, ROLE_ADMIN, ROLE_MANAGER)
 
 class DefaultWorkflow(object):
     """Workflow for teams that use the default model.

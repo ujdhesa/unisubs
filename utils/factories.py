@@ -22,7 +22,7 @@ import factory
 
 from auth.models import CustomUser, UserLanguage
 from teams.models import (Team, TeamMember, TeamVideo, CollaborationWorkflow,
-                          Collaboration, Collaborator)
+                          Collaboration, Collaborator, Project)
 from teams import workflow
 from videos.models import VideoUrl, Video, VIDEO_TYPE_HTML5
 
@@ -61,6 +61,9 @@ class VideoFactory(factory.DjangoModelFactory):
 
     primary_video_url = factory.RelatedFactory(VideoUrlFactory, 'video')
 
+class CollaborationWorkflowFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = CollaborationWorkflow
+
 class TeamFactory(factory.DjangoModelFactory):
     FACTORY_FOR = Team
 
@@ -78,6 +81,9 @@ class TeamFactory(factory.DjangoModelFactory):
 
 class CollaborationTeamFactory(TeamFactory):
     workflow_style = workflow.WORKFLOW_COLLABORATION
+    workflow = factory.RelatedFactory(
+        CollaborationWorkflowFactory, 'team',
+        completion_policy=CollaborationWorkflow.COMPLETION_APPROVER)
 
 class TeamMemberFactory(factory.DjangoModelFactory):
     FACTORY_FOR = TeamMember
@@ -95,14 +101,63 @@ class TeamVideoFactory(factory.DjangoModelFactory):
         member = TeamMemberFactory.create(team=tv.team)
         return member.user
 
-class CollaborationWorkflowFactory(factory.DjangoModelFactory):
-    FACTORY_FOR = CollaborationWorkflow
+class ProjectFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = Project
+
+    team = factory.SubFactory(TeamFactory)
+    name = factory.Sequence(lambda n: 'Project %s' % n)
+
+    @factory.post_generation
+    def shared_teams(self, create, extracted, **kwargs):
+        if extracted:
+            for team in extracted:
+                self.shared_teams.add(team)
 
 class CollaborationFactory(factory.DjangoModelFactory):
     FACTORY_FOR = Collaboration
 
+    language_code = 'en'
     team_video = factory.SubFactory(TeamVideoFactory,
                                     team=factory.SelfAttribute("..team"))
+
+    @classmethod
+    def _generate(cls, create, attrs):
+        collaborator_attrs = cls._pop_collaborator_attrs(attrs)
+        collaboration = super(CollaborationFactory, cls)._generate(create,
+                                                                   attrs)
+        cls._add_collaborators(collaboration, collaborator_attrs)
+        return collaboration
+
+    # Slightly awkward code to handle adding collaborators.  It would be nice
+    # to use the factoryboy post-generation functions, but these need to be
+    # done in-order and I'm not sure that factoryboy guarentees a certain
+    # order.
+    @staticmethod
+    def _pop_collaborator_attrs(attrs):
+        rv = {}
+        for key in ('subtitler', 'reviewer', 'approver'):
+            if key in attrs:
+                rv[key] = attrs.pop(key)
+            if 'endorsed_' + key in attrs:
+                rv['endorsed_' + key] = attrs.pop('endorsed_' + key)
+        return rv
+
+    @staticmethod
+    def _add_collaborators(collaboration, collaborator_attrs):
+        keys_and_roles = [
+            ('subtitler', Collaborator.SUBTITLER),
+            ('reviewer', Collaborator.REVIEWER),
+            ('approver', Collaborator.APPROVER),
+        ]
+
+        for key, role in keys_and_roles:
+            member = collaborator_attrs.get(key)
+            endorser = collaborator_attrs.get('endorsed_' + key)
+            if member:
+                collaboration.add_collaborator(member, role)
+            if endorser:
+                collaboration.add_collaborator(endorser, role)
+                collaboration.mark_endorsed(endorser)
 
 class CollaboratorFactory(factory.DjangoModelFactory):
     FACTORY_FOR = Collaborator

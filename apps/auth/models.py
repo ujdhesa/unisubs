@@ -227,8 +227,11 @@ class CustomUser(BaseUser):
 
         return languages
 
+    def get_language_codes(self):
+        return [l.language for l in self.get_languages()]
+
     def speaks_language(self, language_code):
-        return language_code in [l.language for l in self.get_languages()]
+        return language_code in self.get_language_codes()
 
     def managed_teams(self):
         from apps.teams.models import TeamMember
