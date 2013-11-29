@@ -17,8 +17,10 @@
 # http://www.gnu.org/licenses/agpl-3.0.html.
 
 from django.dispatch import receiver
+from django.db.models.signals import post_save
 
-from teams.models import TeamVideo
+
+from teams.models import Collaboration, TeamVideo
 from teams.signals import api_teamvideo_new
 from videos.signals import feed_imported
 
@@ -31,3 +33,8 @@ def on_feed_imported(signal, sender, new_videos, **kwargs):
             video=video, team=sender.team, added_by=sender.user,
             description=video.description)
         api_teamvideo_new.send(tv)
+
+@receiver(post_save, sender=TeamVideo)
+def on_team_video_saved(signal, sender, instance, created, **kwargs):
+    if not created:
+        instance.collaboration_set.update(project=instance.project)

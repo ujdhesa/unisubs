@@ -26,6 +26,7 @@ from teams.permissions_const import (
     ROLE_OWNER, ROLE_ADMIN, ROLE_MANAGER, ROLE_CONTRIBUTOR,
 )
 from utils.factories import *
+from utils.test_utils import reload_model
 
 # make Collaborator.ROLE values global for easier typing
 SUBTITLER = Collaborator.SUBTITLER
@@ -148,6 +149,25 @@ class CollaborationStateTestCase(TestCase):
         self.check_not_complete()
         self.collaboration.mark_endorsed(self.approver)
         self.check_complete()
+
+class CollaborationProjectTestCase(TestCase):
+    def setUp(self):
+        self.team = CollaborationTeamFactory()
+        self.project = ProjectFactory(team=self.team)
+        self.project2 = ProjectFactory(team=self.team)
+
+    def test_set_project(self):
+        tv = TeamVideoFactory.create(team=self.team, project=self.project)
+        collaboration = CollaborationFactory(team_video=tv)
+        self.assertEquals(collaboration.project, self.project)
+
+    def test_update_project(self):
+        tv = TeamVideoFactory.create(team=self.team, project=self.project)
+        collaboration = CollaborationFactory(team_video=tv)
+        tv.project = self.project2
+        tv.save()
+        collaboration = reload_model(collaboration)
+        self.assertEquals(collaboration.project, self.project2)
 
 class CollaborationTeamTestCase(TestCase):
     # Test the team-related fields of Collaboration.  This is a bit tricky

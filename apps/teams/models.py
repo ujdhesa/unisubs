@@ -2253,19 +2253,24 @@ class CollaborationManager(models.Manager):
         projects = list(Project.objects.all_projects_for_team(
             team_member.team))
         can_start = list(
-            self.filter(team_video__project__in=projects,
-                        state=Collaboration.NOT_STARTED,
+            self.filter(state=Collaboration.NOT_STARTED,
+                        project__in=projects,
                         language_code__in=user_languages)
         )
+
+        can_join = list(
+            self.filter(team=team_member.team,
+                         state__in=self._can_join_states(team_member),
+                         language_code__in=user_languages)
+            .exclude(id__in=[c.id for c in working_on]))
 
         return {
             'working_on': working_on,
             'can_start': can_start,
-            'can_join': self._calc_can_join(team_member, working_on,
-                                            user_languages),
+            'can_join': can_join,
         }
 
-    def _calc_can_join(self, team_member, working_on, user_languages):
+    def _can_join_states(self, team_member):
         states_allowed = [
             Collaboration.NEEDS_REVIEWER
         ]
@@ -2278,12 +2283,7 @@ class CollaborationManager(models.Manager):
             states_allowed.append(Collaboration.NEEDS_APPROVER)
             if not workflow.only_1_approver:
                 states_allowed.append(Collaboration.BEING_APPROVED)
-
-        return (self
-                .filter(team=team_member.team,
-                        state__in=states_allowed,
-                        language_code__in=user_languages)
-                .exclude(id__in=[c.id for c in working_on]))
+        return states_allowed
 
     def update_auto_created(self, team, language_codes):
         """Update the auto-created collaborations.
@@ -2320,8 +2320,8 @@ class CollaborationManager(models.Manager):
 
     def _insert_auto_created(self, cursor, team, language_codes):
         sql = ("INSERT INTO teams_collaboration(team_video_id, "
-               "language_code, state, last_joined, team_id) "
-               "SELECT tv.id, %s, %s, NULL, NULL "
+               "project_id, language_code, state, last_joined, team_id) "
+               "SELECT tv.id, tv.project_id, %s, %s, NULL, NULL "
                " FROM teams_teamvideo tv "
                " LEFT JOIN teams_collaboration c "
                " ON c.team_video_id=tv.id AND c.language_code=%s "
@@ -2363,11 +2363,19 @@ class Collaboration(models.Model):
     # team in the case of shared projects.  Use owning_team() to get the team
     # that owns the video.
     team = models.ForeignKey(Team, null=True)
+    # project from our team video.  We denormalize the data to because we want
+    # to index it.
+    project = models.ForeignKey(Project)
 
     objects = CollaborationManager()
 
     class Meta:
         unique_together = ('team_video', 'language_code')
+
+    def __init__(self, *args, **kwargs):
+        if not args and 'team_video' in kwargs:
+            kwargs['project_id'] = kwargs['team_video'].project_id
+        return models.Model.__init__(self, *args, **kwargs)
 
     def __unicode__(self):
         return u'%s collaboration for %s' % (self.get_language_code_display(),

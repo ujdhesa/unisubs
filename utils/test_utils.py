@@ -27,6 +27,9 @@ def reset_requests():
     global REQUEST_CALLBACKS
     REQUEST_CALLBACKS = []
 
+def reload_model(model_obj):
+    return model_obj.__class__.objects.get(pk=model_obj.pk)
+
 def store_request_call(url, **kwargs):
     method = kwargs.pop('method', None)
     data = urlparse.parse_qs(kwargs.pop("body", ""))
