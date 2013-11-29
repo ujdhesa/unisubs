@@ -2242,13 +2242,12 @@ class CollaborationManager(models.Manager):
         user_languages = team_member.user.get_language_codes()
         working_on = list(
             self.filter(team_id=team_member.team_id)
-            .exclude(state=Collaboration.COMPLETE)
             .extra(where=[
-                'EXISTS (SELECT 1 '
-                'FROM teams_collaborator c '
-                'WHERE c.collaboration_id=teams_collaboration.id '
-                'AND c.user_id=%s)'],
-                params=(team_member.user_id,))
+                'teams_collaboration.id IN ('
+                'SELECT collaboration_id '
+                'FROM teams_collaborator tc '
+                'WHERE tc.user_id=%s AND NOT tc.complete)',
+            ], params=(team_member.user_id,))
         )
 
         projects = list(Project.objects.all_projects_for_team(
@@ -2415,7 +2414,7 @@ class Collaboration(models.Model):
 
     def mark_endorsed(self, team_member):
         """Mark this collaboration endorsed by a user."""
-        collaborator = self.collaborator_set.get(user=team_member.user)
+        collaborator = self.collaborators.get(user=team_member.user)
         collaborator.mark_endorsed()
         # Check if the endorsement changes our state
         new_state = None
@@ -2437,6 +2436,8 @@ class Collaboration(models.Model):
         if new_state is not None:
             self.state = new_state
             self.save()
+            if new_state == Collaboration.COMPLETE:
+                self.collaborators.update(complete=True)
 
 class Collaborator(models.Model):
     """User who is part of a collaboration."""
@@ -2450,11 +2451,15 @@ class Collaborator(models.Model):
         (APPROVER, _('Approver')),
     ]
 
-    collaboration = models.ForeignKey(Collaboration)
+    collaboration = models.ForeignKey(Collaboration,
+                                      related_name='collaborators')
     user = models.ForeignKey(User)
     role = models.CharField(max_length=1, choices=ROLE_CHOICES)
     start_date = models.DateTimeField()
     endorsement_date = models.DateTimeField(blank=True, null=True)
+    # True when our collaboration has state COMPLETE.  We denormalize this
+    # because we want create an index from it
+    complete = models.BooleanField(default=False)
 
     def __init__(self, *args, **kwargs):
         if not args and 'start_date' not in kwargs:

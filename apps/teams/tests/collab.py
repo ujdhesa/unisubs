@@ -89,9 +89,13 @@ class CollaborationStateTestCase(TestCase):
 
     def check_complete(self):
         self.assertEquals(self.collaboration.state, Collaboration.COMPLETE)
+        for collaborator in self.collaboration.collaborators.all():
+            self.assertEquals(collaborator.complete, True)
 
     def check_not_complete(self):
         self.assertNotEquals(self.collaboration.state, Collaboration.COMPLETE)
+        for collaborator in self.collaboration.collaborators.all():
+            self.assertEquals(collaborator.complete, False)
 
     def test_states_before_complete(self):
         self.check_state(Collaboration.NOT_STARTED)
