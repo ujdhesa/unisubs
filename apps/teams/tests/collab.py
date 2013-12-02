@@ -19,6 +19,7 @@
 from __future__ import absolute_import
 
 from django.test import TestCase
+from factory import make_factory
 
 from teams.models import (Collaboration, CollaborationLanguage,
                           CollaborationWorkflow)
@@ -99,7 +100,7 @@ class CollaborationStateTestCase(TestCase):
             self.assertEquals(collaborator.complete, False)
 
     def test_states_before_complete(self):
-        self.check_state(Collaboration.NOT_STARTED)
+        self.check_state(Collaboration.NEEDS_SUBTITLER)
 
         self.collaboration.add_collaborator(self.subtitler, SUBTITLER)
         self.check_state(Collaboration.BEING_SUBTITLED)
@@ -247,8 +248,6 @@ class CollaborationCreationTestCase(TestCase):
 class CollaborationManagerDashboardTestCase(TestCase):
     def setUp(self):
         self.team = CollaborationTeamFactory()
-        self.tv1 = TeamVideoFactory(team=self.team)
-        self.tv2 = TeamVideoFactory(team=self.team)
         self.member = TeamMemberFactory(team=self.team, role=ROLE_MANAGER,
                                         user__languages=['en', 'es', 'fr'])
         self.colleague1 = TeamMemberFactory(team=self.team, role=ROLE_MANAGER)
@@ -266,125 +265,151 @@ class CollaborationManagerDashboardTestCase(TestCase):
         # yet.
         self.shared_project = ProjectFactory.create(shared_teams=[self.team])
 
-    def check_working_on(self, correct_collaborations):
+        self.make_collaboration = make_factory(CollaborationFactory,
+                                               team_video__team=self.team,
+                                               language_code='en')
+
+    def check_joined(self, correct_collaborations):
+        collaborations_and_collaborators = [
+            (c, c.collaborators.get(user=self.member.user))
+            for c in correct_collaborations
+        ]
         for_dashboard = Collaboration.objects.for_dashboard(self.member)
-        self.assertEquals(set(for_dashboard['working_on']),
-                          set(correct_collaborations))
+        self.assertEquals(set(for_dashboard['joined']),
+                          set(collaborations_and_collaborators))
 
     def check_can_join(self, correct_collaborations):
         for_dashboard = Collaboration.objects.for_dashboard(self.member)
         self.assertEquals(set(for_dashboard['can_join']),
                           set(correct_collaborations))
+        self.check_can_join_order(for_dashboard['can_join'])
 
-    def check_can_start(self, correct_collaborations):
-        for_dashboard = Collaboration.objects.for_dashboard(self.member)
-        self.assertEquals(set(for_dashboard['can_start']),
-                          set(correct_collaborations))
+    def check_can_join_order(self, collaborations):
+        if not collaborations:
+            return
+        # check that the collaborations are ordered by state
+        state_order = [
+            Collaboration.NEEDS_SUBTITLER,
+            Collaboration.BEING_SUBTITLED,
+            Collaboration.NEEDS_REVIEWER,
+            Collaboration.BEING_REVIEWED,
+            Collaboration.NEEDS_APPROVER,
+            Collaboration.BEING_APPROVED,
+        ]
+        last_index = state_order.index(collaborations[0].state)
+        for i, collaboration in enumerate(collaborations[1:]):
+            if (state_order.index(collaboration.state) < last_index):
+                raise AssertionError(
+                    "Collabortions out of order (%s followed by %s)" % (
+                        collaboration[i-1].get_state_display(),
+                        collaboration[i].get_state_display()))
 
-    def test_working_on(self):
+    def test_joined(self):
         # we should return these because member is part of the collaboration
-        working_on = [
-            CollaborationFactory(team_video=self.tv1, language_code='en',
-                                 subtitler=self.member),
-            CollaborationFactory(team_video=self.tv1, language_code='es',
-                                 endorsed_subtitler=self.colleague1,
-                                 reviewer=self.member),
-            CollaborationFactory(team_video=self.tv1, language_code='fr',
-                                 endorsed_subtitler=self.colleague1,
-                                 endorsed_reviewer=self.colleague2,
-                                 approver=self.member)
+        joined = [
+            self.make_collaboration(subtitler=self.member),
+            self.make_collaboration(endorsed_subtitler=self.colleague1,
+                                    reviewer=self.member),
+            self.make_collaboration(endorsed_subtitler=self.colleague1,
+                                    endorsed_reviewer=self.colleague2,
+                                    approver=self.member)
         ]
         # we shouldn't return these because member is not part of the
         # collaboration
-        CollaborationFactory(team_video=self.tv2, language_code='en',
-                             subtitler=self.colleague1)
-        CollaborationFactory(team_video=self.tv2, language_code='es',
-                             endorsed_subtitler=self.colleague1,
-                             endorsed_reviewer=self.colleague2)
+        self.make_collaboration(subtitler=self.colleague1)
+        self.make_collaboration(endorsed_subtitler=self.colleague1,
+                                endorsed_reviewer=self.colleague2)
         # We shouldn't return this one because the collaboration is complete
-        CollaborationFactory(team_video=self.tv2, language_code='fr',
-                             endorsed_subtitler=self.member,
-                             endorsed_reviewer=self.colleague1,
-                             endorsed_approver=self.colleague2)
+        self.make_collaboration(endorsed_subtitler=self.member,
+                                endorsed_reviewer=self.colleague1,
+                                endorsed_approver=self.colleague2)
         # We shouldn't return this one because it's for another team
-        CollaborationFactory(team_video__team=self.other_team,
-                             language_code='en',
-                             endorsed_subtitler=self.other_team_member)
-        # if a user is a member of another team, we shouldn't return those
-        # collorations
-        self.check_working_on(working_on)
+        self.make_collaboration(team_video__team=self.other_team,
+                                endorsed_subtitler=self.other_team_member)
+        self.check_joined(joined)
 
     def test_can_join(self):
-        # Collaborations that the user can join
-        needs_reviewer = CollaborationFactory(
-            team_video=self.tv1, language_code='en',
-            endorsed_subtitler=self.colleague1)
-        needs_approver = CollaborationFactory(
-            team_video=self.tv1, language_code='es',
-            endorsed_subtitler=self.colleague1,
-            endorsed_reviewer=self.colleague2)
-        # can't join because it hasn't been started
-        CollaborationFactory(team_video=self.tv1, language_code='fr')
-        # can't join because a subtitler has not endorsed it
-        CollaborationFactory(team_video=self.tv2, language_code='en',
-                             subtitler=self.colleague1)
-        # can't join because they're already a part of it
-        CollaborationFactory(team_video=self.tv2, language_code='es',
-                             endorsed_subtitler=self.member)
-        # can't joint because it's complete
-        CollaborationFactory(team_video=self.tv2, language_code='fr',
-                             endorsed_subtitler=self.colleague1,
-                             endorsed_reviewer=self.colleague2,
-                             endorsed_approver=self.colleague3)
-        # can't join because it's not one of the user's languages
-        CollaborationFactory(team_video=self.tv2, language_code='de',
-                             endorsed_subtitler=self.colleague1)
-        # can't join because it's part of a different team
-
-        self.check_can_join([needs_reviewer, needs_approver])
-        # non-managers can only join as a reviewer, not an approver
-        self.member.role = ROLE_CONTRIBUTOR
-        self.member.save()
-        self.check_can_join([needs_reviewer])
-
-    def test_can_join_not_only_1(self):
-        self.team.workflow.only_1_subtitler = False
-        self.team.workflow.only_1_reviewer = False
-        self.team.workflow.only_1_approver = False
-        self.team.workflow.save()
-        can_join = [
-            CollaborationFactory(team_video=self.tv1, language_code='en',
-                                 subtitler=self.colleague1),
-            CollaborationFactory(team_video=self.tv1, language_code='es',
-                                 endorsed_subtitler=self.colleague1,
-                                 reviewer=self.colleague2),
-            CollaborationFactory(team_video=self.tv1, language_code='fr',
-                                 endorsed_subtitler=self.colleague1,
-                                 endorsed_reviewer=self.colleague2,
-                                 approver=self.colleague3),
-        ]
-        self.check_can_join(can_join)
-
-    def test_can_start(self):
-        # can start these
-        can_start = [
-            CollaborationFactory(team_video=self.tv1, language_code='en'),
-            CollaborationFactory(team_video=self.tv1, language_code='es'),
-            CollaborationFactory.create(
+        # Collaborations that the user can start subtitling
+        needs_subtitler = [
+            self.make_collaboration(),
+            self.make_collaboration(language_code='es'),
+            self.make_collaboration(language_code='fr'),
+            self.make_collaboration(
                 team_video__team=self.shared_project.team,
                 team_video__project=self.shared_project,
                 language_code='en')
         ]
-        # can't start this one because it's owned by a different team
-        CollaborationFactory.create(
-            team_video__team=self.other_team,
-            language_code='en')
-        # can't start because the work is already started
-        CollaborationFactory.create(team_video=self.tv1,
-                                    language_code='fr',
-                                    subtitler=self.colleague1)
-        # can't start because it's not one of the user's preferred languages
-        CollaborationFactory.create(team_video=self.tv1,
-                                    language_code='de')
+        # Collaborations that the user can join
+        needs_reviewer = [
+            self.make_collaboration(endorsed_subtitler=self.colleague1),
+            self.make_collaboration(language_code='es',
+                                    endorsed_subtitler=self.colleague1),
+        ]
 
-        self.check_can_start(can_start)
+        needs_approver = [
+            self.make_collaboration(endorsed_subtitler=self.colleague1,
+                                    endorsed_reviewer=self.colleague2),
+            self.make_collaboration(language_code='fr',
+                                    endorsed_subtitler=self.colleague1,
+                                    endorsed_reviewer=self.colleague2),
+        ]
+        # Collaborations the user can join depending on the value of the
+        # only_1_subtitler/only_1_reviewer/only_1_approver
+        can_join_if_not_only_1 = [
+            self.make_collaboration(subtitler=self.colleague1),
+            self.make_collaboration(endorsed_subtitler=self.colleague1,
+                                    reviewer=self.colleague2),
+            self.make_collaboration(endorsed_subtitler=self.colleague1,
+                                    endorsed_reviewer=self.colleague2,
+                                    approver=self.colleague3),
+        ]
+        # can't join this one because it's owned by a different team
+        self.make_collaboration(team_video__team=self.other_team)
+        # can't join it's not for a preferred language
+        self.make_collaboration(language_code='de')
+        self.make_collaboration(language_code='pt-br',
+                                endorsed_subtitler=self.colleague1)
+        # can't join because member has already joined
+        self.make_collaboration(endorsed_subtitler=self.member)
+        # can't joint because it's complete
+        self.make_collaboration(endorsed_subtitler=self.colleague1,
+                                endorsed_reviewer=self.colleague2,
+                                endorsed_approver=self.colleague3)
+        # okay, let's check the collaborations returned
+        self.check_can_join(needs_subtitler + needs_reviewer + needs_approver)
+        # non-managers can only join as a reviewer, not an approver
+        self.member.role = ROLE_CONTRIBUTOR
+        self.member.save()
+        self.check_can_join(needs_subtitler + needs_reviewer)
+        # test change only_1_subtitler and friends
+        self.member.role = ROLE_MANAGER
+        self.member.save()
+        self.team.workflow.only_1_subtitler = False
+        self.team.workflow.only_1_reviewer = False
+        self.team.workflow.only_1_approver = False
+        self.team.workflow.save()
+        self.check_can_join(needs_subtitler + needs_reviewer +
+                            needs_approver + can_join_if_not_only_1)
+
+    def test_limits(self):
+        for i in xrange(10):
+            # make of collaborations that the user can join, these should be
+            # limited by the limit we pass to for_dashboard()
+            CollaborationFactory(team_video__team=self.team,
+                                 language_code='en')
+            CollaborationFactory(team_video__team=self.team,
+                                 language_code='en',
+                                 endorsed_subtitler=self.colleague1)
+            CollaborationFactory(team_video__team=self.team,
+                                 language_code='en',
+                                 endorsed_subtitler=self.colleague1,
+                                 endorsed_reviewer=self.colleague2)
+            # make collaborations that the user has joined.  We shouldn't
+            # limit these
+            CollaborationFactory(team_video__team=self.team,
+                                 language_code='en',
+                                 subtitler=self.member)
+        for_dashboard = Collaboration.objects.for_dashboard(
+            self.member, can_join_limit=5)
+        self.assertEquals(len(for_dashboard['can_join']), 15)
+        self.assertEquals(len(for_dashboard['joined']), 10)

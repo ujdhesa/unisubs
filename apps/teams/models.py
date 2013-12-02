@@ -2230,60 +2230,85 @@ class Partner(models.Model):
         return user in self.admins.all()
 
 class CollaborationManager(models.Manager):
-    def for_dashboard(self, team_member):
+    def for_dashboard(self, team_member, can_join_limit=None):
         """Get collaborations to show for a user's dashboard.
 
         Returns a dict with the following keys:
 
-            working_on - Collaborations the member is a part of
-            can_start - Unstarted collaborations the member can start
-            can_join - Active collaborations the member can join
+            joined - List of (Collaboration, Collaborator) models for
+            collaborations the member has joined
+            can_join - Collaborations the member can join
+
+        If can_join_limit is given, we will only fetch that many
+        Collaborations to join for each collaboration state (only N
+        collaborations to subtitle, N to review, etc).
         """
-        user_languages = team_member.user.get_language_codes()
-        working_on = list(
-            self.filter(team_id=team_member.team_id)
-            .extra(where=[
-                'teams_collaboration.id IN ('
-                'SELECT collaboration_id '
-                'FROM teams_collaborator tc '
-                'WHERE tc.user_id=%s AND NOT tc.complete)',
-            ], params=(team_member.user_id,))
-        )
-
-        projects = list(Project.objects.all_projects_for_team(
-            team_member.team))
-        can_start = list(
-            self.filter(state=Collaboration.NOT_STARTED,
-                        project__in=projects,
-                        language_code__in=user_languages)
-        )
-
-        can_join = list(
-            self.filter(team=team_member.team,
-                         state__in=self._can_join_states(team_member),
-                         language_code__in=user_languages)
-            .exclude(id__in=[c.id for c in working_on]))
+        # calculate which collaborations the user is currently working on.
+        # Since we're going to use this for the other querysets, it's more
+        # efficeient to evaluate the querysets immediately.
+        collaborator_qs = (Collaborator.objects
+                           .filter(user=team_member.user,
+                                   complete=False,
+                                   collaboration__team=team_member.team)
+                           .select_related('collaboration'))
+        joined = [(collaborator.collaboration, collaborator)
+                      for collaborator in collaborator_qs]
 
         return {
-            'working_on': working_on,
-            'can_start': can_start,
-            'can_join': can_join,
+            'joined': joined,
+            'can_join': self._can_join(team_member, joined, can_join_limit)
         }
 
-    def _can_join_states(self, team_member):
-        states_allowed = [
-            Collaboration.NEEDS_REVIEWER
-        ]
+    def _can_join(self, team_member, joined, limit):
+        return (list(self._can_join_not_started(team_member, limit)) +
+                list(self._can_join_started(team_member, joined, limit)))
+
+    def _can_join_not_started(self, team_member, limit):
+        projects = list(Project.objects.all_projects_for_team(
+            team_member.team))
+        return self.filter(
+            state=Collaboration.NEEDS_SUBTITLER,
+            project__in=projects,
+            language_code__in=team_member.user.get_language_codes())[:limit]
+
+    def _states_member_can_join(self, team_member):
         workflow = team_member.team.workflow
         if not workflow.only_1_subtitler:
-            states_allowed.append(Collaboration.BEING_SUBTITLED)
+            yield Collaboration.BEING_SUBTITLED
+        yield Collaboration.NEEDS_REVIEWER
         if not workflow.only_1_reviewer:
-            states_allowed.append(Collaboration.BEING_REVIEWED)
+            yield Collaboration.BEING_REVIEWED
         if workflow.member_can_approve(team_member):
-            states_allowed.append(Collaboration.NEEDS_APPROVER)
-            if not workflow.only_1_approver:
-                states_allowed.append(Collaboration.BEING_APPROVED)
-        return states_allowed
+            yield Collaboration.NEEDS_APPROVER
+            if not workflow.only_1_reviewer:
+                yield Collaboration.BEING_APPROVED
+
+    def _can_join_started(self, team_member, joined, limit):
+        rv = []
+        # calculate which Collaboration states the user can join
+        states = []
+        workflow = team_member.team.workflow
+        if not workflow.only_1_subtitler:
+            states.append(Collaboration.BEING_SUBTITLED)
+        states.append(Collaboration.NEEDS_REVIEWER)
+        if not workflow.only_1_reviewer:
+            states.append(Collaboration.BEING_REVIEWED)
+        if workflow.member_can_approve(team_member):
+            states.append(Collaboration.NEEDS_APPROVER)
+            if not workflow.only_1_reviewer:
+                states.append(Collaboration.BEING_APPROVED)
+        # query Collaborations for each state
+        user_languages = team_member.user.get_language_codes()
+        join_qs = (self.
+                   filter(team=team_member.team,
+                          language_code__in=user_languages)
+                   .exclude(id__in=[collab.id for (collab, _) in joined]))
+        for state in states:
+            if limit is None:
+                rv.extend(join_qs.filter(state=state))
+            else:
+                rv.extend(join_qs.filter(state=state)[:limit])
+        return rv
 
     def update_auto_created(self, team, language_codes):
         """Update the auto-created collaborations.
@@ -2327,14 +2352,14 @@ class CollaborationManager(models.Manager):
                " ON c.team_video_id=tv.id AND c.language_code=%s "
                " WHERE tv.team_id=%s AND c.id IS NULL")
         for language_code in language_codes:
-            values = (language_code, Collaboration.NOT_STARTED,
+            values = (language_code, Collaboration.NEEDS_SUBTITLER,
                       language_code, team.id)
             cursor.execute(sql, values)
 
 class Collaboration(models.Model):
     """Tracks subtitling work for a video language."""
 
-    NOT_STARTED = 's'
+    NEEDS_SUBTITLER = 's'
     BEING_SUBTITLED = 'S'
     NEEDS_REVIEWER = 'r'
     BEING_REVIEWED = 'R'
@@ -2343,7 +2368,7 @@ class Collaboration(models.Model):
     COMPLETE = 'C'
 
     STATE_CHOICES = [
-        (NOT_STARTED, 'needs subtitler'),
+        (NEEDS_SUBTITLER, 'needs subtitler'),
         (BEING_SUBTITLED, 'being subtitled'),
         (NEEDS_REVIEWER, 'needs reviewer'),
         (BEING_REVIEWED, 'being reviewed'),
@@ -2356,7 +2381,7 @@ class Collaboration(models.Model):
     team_video = models.ForeignKey(TeamVideo)
     language_code = models.CharField(max_length=16, choices=ALL_LANGUAGES)
     state = models.CharField(max_length=1, choices=STATE_CHOICES,
-                             default=NOT_STARTED)
+                             default=NEEDS_SUBTITLER)
     last_joined = models.DateTimeField(null=True, blank=True, default=None,
                                        db_index=True)
     # team doing the work.  Note that the video can be owned by a different
@@ -2401,7 +2426,7 @@ class Collaboration(models.Model):
                                                    role=role)
         # Create a lookup table that maps (old_state, role) -> new_state
         state_change_map = {
-            (Collaboration.NOT_STARTED,
+            (Collaboration.NEEDS_SUBTITLER,
              Collaborator.SUBTITLER): Collaboration.BEING_SUBTITLED,
             (Collaboration.NEEDS_REVIEWER,
              Collaborator.REVIEWER): Collaboration.BEING_REVIEWED,
