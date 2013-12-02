@@ -26,7 +26,7 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.core.files import File
-from django.db import connection
+from django.db import connection, transaction
 from django.db import models
 from django.db.models.signals import post_save, post_delete, pre_delete
 from django.http import Http404
@@ -2324,6 +2324,7 @@ class CollaborationManager(models.Manager):
         cursor = connection.cursor()
         self._delete_auto_created(cursor, team, language_codes)
         self._insert_auto_created(cursor, team, language_codes)
+        transaction.commit_unless_managed()
 
     def _delete_auto_created(self, cursor, team, language_codes):
         # This is a fairly crazy query, mostly because mysql doesn't let you
@@ -2409,7 +2410,58 @@ class Collaboration(models.Model):
     def owning_team(self):
         return self.team_video.team
 
-    def add_collaborator(self, team_member, role):
+    def can_join(self, member):
+        """Check if a team member can join this collaboration
+
+        :param member: TeamMember object.
+        :returns: True if the user can join this collaboration.
+        """
+
+        if self.team is not None:
+            if member.team != self.team:
+                return False
+        else:
+            member_teams = set([m.team_id for m in
+                                member.user.team_members.all()])
+            project_teams = set([self.team_video.project.team_id])
+            project_teams.update(t.id for t in
+                                 self.team_video.project.shared_teams.all())
+            if not member_teams.intersection(project_teams):
+                return False
+
+        if self.state in (Collaboration.NEEDS_SUBTITLER,
+                          Collaboration.NEEDS_REVIEWER):
+            return True
+        elif self.state == Collaboration.BEING_SUBTITLED:
+            return not self.team.workflow.only_1_subtitler
+        elif self.state == Collaboration.BEING_REVIEWED:
+            return not self.team.workflow.only_1_reviewer
+        elif self.state == Collaboration.NEEDS_APPROVER:
+            return self.team.workflow.member_can_approve(member)
+        elif self.state == Collaboration.BEING_APPROVED:
+            return (self.team.workflow.member_can_approve(member) and
+                    not self.team.workflow.only_1_approver)
+        elif self.state == Collaboration.COMPLETE:
+            return False
+        else:
+            raise ValueError("Unknown state: %s" % self.state)
+
+    def _join_role(self):
+        """Get the role that a new user should join as."""
+        if self.state in (Collaboration.NEEDS_SUBTITLER,
+                          Collaboration.BEING_SUBTITLED):
+            return Collaborator.SUBTITLER
+        elif self.state in (Collaboration.NEEDS_REVIEWER,
+                          Collaboration.BEING_REVIEWED):
+            return Collaborator.REVIEWER
+        elif self.state in (Collaboration.NEEDS_APPROVER,
+                          Collaboration.BEING_APPROVED):
+            return Collaborator.APPROVER
+        else:
+            raise ValueError("Invalid state in _join_role: %s" % self.state)
+
+
+    def join(self, team_member):
         """Add a new collaborator to this collaboration.
 
         This method creates the Collaborator and potentially updates our
@@ -2417,10 +2469,11 @@ class Collaboration(models.Model):
 
         :returns: Collaborator object.
         """
-        if self.team_id is not None and self.team_id != team_member.team_id:
-            raise ValueError("%s is not a member of %s" % (team_member,
-                                                           self.team))
 
+        if not self.can_join(team_member):
+            raise ValueError("%s can't join" % (team_member,))
+
+        role = self._join_role()
         collaborator = Collaborator.objects.create(collaboration=self,
                                                    user=team_member.user,
                                                    role=role)

@@ -144,19 +144,13 @@ class CollaborationFactory(factory.DjangoModelFactory):
 
     @staticmethod
     def _add_collaborators(collaboration, collaborator_attrs):
-        keys_and_roles = [
-            ('subtitler', Collaborator.SUBTITLER),
-            ('reviewer', Collaborator.REVIEWER),
-            ('approver', Collaborator.APPROVER),
-        ]
-
-        for key, role in keys_and_roles:
+        for key in ('subtitler', 'reviewer', 'approver'):
             member = collaborator_attrs.get(key)
             endorser = collaborator_attrs.get('endorsed_' + key)
             if member:
-                collaboration.add_collaborator(member, role)
+                collaboration.join(member)
             if endorser:
-                collaboration.add_collaborator(endorser, role)
+                collaboration.join(endorser)
                 collaboration.mark_endorsed(endorser)
 
 class CollaboratorFactory(factory.DjangoModelFactory):
