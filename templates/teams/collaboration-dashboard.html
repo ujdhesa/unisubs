@@ -1,0 +1,52 @@
+{% extends "teams/base.html" %}
+
+{% load i18n %}
+
+{% block title %}
+    {% trans 'Dashboard' %} - {{ team }} | Amara
+{% endblock %}
+
+{% block body_attrs %}class="v1 team_collab_dashboard" id="teams"{% endblock %}
+{% block html_attrs %}id="team_collab_dashboard"{% endblock %}
+
+{% block view_content %}
+
+    <div class="grid_8 view omega">
+        {% if collaborations.joined %}
+        <h2>{% trans "Your Collaborations" %}</h2>
+        <table>
+            {% for collaboration, collaborator in collaborations.joined %}
+            <tr>
+                <td><a href="{{ collaboration.video.get_absolute_url }}">{{ collaboration.video }}</a></td>
+                <td>{{ collaboration.get_language_code_display }} </td>
+                <td>{{ collaborator.get_role_display }} </td>
+                <td><a class="button" href="#">{% trans "Edit Subtitles" %}</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+
+        {% if collaborations.can_join %}
+        <h2>{% trans "Collaborations to join" %}</h2>
+        <table>
+            {% for collaboration in collaborations.can_join %}
+            <tr>
+                <td><a href="{{ collaboration.video.get_absolute_url }}">{{ collaboration.video }}</a></td>
+                <td>{{ collaboration.get_language_code_display }} </td>
+                <td>{{ collaboration.get_state_display }} </td>
+                <td>
+                    <form action="{{ collaboration.get_absolute_url }}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="team" value="{{ team.slug }}">
+                        <input type="hidden" name="action" value="join">
+                        <button>{{ collaboration.join_label }}</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+    </div>
+
+{% endblock %}
+

@@ -27,6 +27,7 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.core.files import File
 from django.db import connection, transaction
+from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models.signals import post_save, post_delete, pre_delete
 from django.http import Http404
@@ -313,7 +314,7 @@ class Team(models.Model):
         if hasattr(self, '_workflow'):
             del self._workflow
 
-    def collaboration_enabled(self):
+    def collaborations_enabled(self):
         return self.workflow_style == workflow.WORKFLOW_COLLABORATION
 
     def tasks_enabled(self):
@@ -2361,21 +2362,21 @@ class Collaboration(models.Model):
     """Tracks subtitling work for a video language."""
 
     NEEDS_SUBTITLER = 's'
-    BEING_SUBTITLED = 'S'
+    BEING_SUBTITLED = 'u'
     NEEDS_REVIEWER = 'r'
-    BEING_REVIEWED = 'R'
+    BEING_REVIEWED = 'e'
     NEEDS_APPROVER = 'a'
-    BEING_APPROVED = 'A'
-    COMPLETE = 'C'
+    BEING_APPROVED = 'p'
+    COMPLETE = 'c'
 
     STATE_CHOICES = [
-        (NEEDS_SUBTITLER, 'needs subtitler'),
-        (BEING_SUBTITLED, 'being subtitled'),
-        (NEEDS_REVIEWER, 'needs reviewer'),
-        (BEING_REVIEWED, 'being reviewed'),
-        (NEEDS_APPROVER, 'needs approver'),
-        (BEING_APPROVED, 'being approved'),
-        (COMPLETE, 'complete'),
+        (NEEDS_SUBTITLER, 'Needs subtitler'),
+        (BEING_SUBTITLED, 'Being subtitled'),
+        (NEEDS_REVIEWER, 'Needs reviewer'),
+        (BEING_REVIEWED, 'Being reviewed'),
+        (NEEDS_APPROVER, 'Needs approver'),
+        (BEING_APPROVED, 'Being approved'),
+        (COMPLETE, 'Complete'),
     ]
 
     # video/language being worked on
@@ -2406,6 +2407,14 @@ class Collaboration(models.Model):
     def __unicode__(self):
         return u'%s collaboration for %s' % (self.get_language_code_display(),
                                              self.team_video)
+
+    def get_absolute_url(self):
+        return reverse('teams:collaboration', kwargs={
+            'collaboration_id': self.id})
+
+    @property
+    def video(self):
+        return self.team_video.video
 
     def owning_team(self):
         return self.team_video.team
@@ -2457,6 +2466,21 @@ class Collaboration(models.Model):
         elif self.state in (Collaboration.NEEDS_APPROVER,
                           Collaboration.BEING_APPROVED):
             return Collaborator.APPROVER
+        else:
+            raise ValueError("Invalid state in _join_role: %s" % self.state)
+
+    def join_label(self):
+        """Get a human-friendly label for joining this collaboration.
+
+        This will return something like "Review subtitles"
+        """
+        role = self._join_role()
+        if role == Collaborator.SUBTITLER:
+            return _("Create subtitles")
+        elif role == Collaborator.REVIEWER:
+            return _("Review subtitles")
+        elif role == Collaborator.APPROVER:
+            return _("Approve subtitles")
         else:
             raise ValueError("Invalid state in _join_role: %s" % self.state)
 

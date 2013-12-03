@@ -18,6 +18,7 @@
 import functools
 import logging
 import random
+from urllib import urlencode
 
 import babelsubs
 from django.conf import settings
@@ -56,6 +57,7 @@ from teams.models import (
     Team, TeamMember, Invite, Application, TeamVideo, Task, Project,
     TaskWorkflow, Setting, TeamLanguagePreference, InviteExpiredException,
     BillingReport, ApplicationInvalidException, CollaborationLanguage,
+    Collaboration
 )
 from teams.permissions import (
     can_add_video, can_assign_role, can_assign_tasks, can_create_task_subtitle,
@@ -1198,10 +1200,7 @@ def _get_task_filters(request):
              'assignee': request.GET.get('assignee'),
              'q': request.GET.get('q'), }
 
-@timefn
-@render_to('teams/dashboard.html')
 def dashboard(request, slug):
-
     team = Team.get(slug, request.user)
     user = request.user if request.user.is_authenticated() else None
     try:
@@ -1209,6 +1208,14 @@ def dashboard(request, slug):
     except TeamMember.DoesNotExist:
         member = None
 
+    if member and team.collaborations_enabled():
+        return collaboration_dashboard(request, team, member)
+    else:
+        return tasks_dashboard(request, team, member)
+
+@timefn
+@render_to('teams/dashboard.html')
+def tasks_dashboard(request, team, member):
     if user:
         user_languages = set([ul for ul in user.get_languages()])
         user_filter = {'assignee':str(user.id),'language':'all'}
@@ -1302,6 +1309,40 @@ def dashboard(request, slug):
     }
 
     return context
+
+@render_to('teams/collaboration-dashboard.html')
+def collaboration_dashboard(request, team, member):
+    return {
+        'team': team,
+        'member': member,
+        'collaborations': Collaboration.objects.for_dashboard(member, 3),
+    }
+
+def collaboration(request, collaboration_id):
+    collaboration = get_object_or_404(Collaboration, id=collaboration_id)
+
+    video_url = collaboration.team_video.video.get_absolute_url()
+
+    if request.method != 'POST':
+        return redirect(video_url)
+
+    if request.POST.get('action') == 'join':
+        try:
+            member = request.user.team_members.get(
+                team__slug=request.POST.get('team'))
+        except TeamMember.DoesNotExist:
+            return redirect(video_url)
+        if not collaboration.can_join(member):
+            return redirect(video_url)
+        collaboration.join(member)
+        url = reverse('subtitles:subtitle-editor', kwargs={
+            'video_id': collaboration.team_video.video.video_id,
+            'language_code': collaboration.language_code,
+        })
+        params = urlencode({'collaboration_id': collaboration.id})
+        return HttpResponseRedirect("%s?%s" % (url, params))
+    else:
+        return redirect(video_url)
 
 @timefn
 @render_to('teams/tasks.html')
