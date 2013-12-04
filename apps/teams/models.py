@@ -24,7 +24,7 @@ import logging
 
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files import File
 from django.db import connection, transaction
 from django.core.urlresolvers import reverse
@@ -2523,8 +2523,19 @@ class Collaboration(models.Model):
         return collaborator
 
     def mark_endorsed(self, team_member):
-        """Mark this collaboration endorsed by a user."""
-        collaborator = self.collaborators.get(user=team_member.user)
+        """Mark this collaboration endorsed by a user.
+
+        :param team_member: TeamMember or User object
+        """
+        try:
+            if isinstance(team_member, TeamMember):
+                user = team_member.user
+            else:
+                user = team_member
+            collaborator = self.collaborators.get(user=user)
+        except Collaborator.DoesNotExist:
+            raise PermissionDenied(_(
+                "You are not part of the collaboration for this video"))
         collaborator.mark_endorsed()
         # Check if the endorsement changes our state
         new_state = None
