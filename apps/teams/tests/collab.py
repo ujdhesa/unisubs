@@ -225,7 +225,7 @@ class CollaborationCreationTestCase(CollaborationTestCase):
         self.team_video = TeamVideoFactory.create(team=self.team)
 
     def check_collaboration_languages(self, team_video, correct_languages):
-        collaborations = self.team_video.collaboration_set.all()
+        collaborations = team_video.collaboration_set.all()
         self.assertEquals(set(c.language_code for c in collaborations),
                           set(correct_languages))
 

@@ -36,5 +36,7 @@ def on_feed_imported(signal, sender, new_videos, **kwargs):
 
 @receiver(post_save, sender=TeamVideo)
 def on_team_video_saved(signal, sender, instance, created, **kwargs):
-    if not created:
+    if created:
+        Collaboration.objects.autocreate_for_new_video(instance)
+    else:
         instance.collaboration_set.update(project=instance.project)

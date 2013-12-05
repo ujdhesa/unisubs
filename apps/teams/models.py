@@ -2311,6 +2311,14 @@ class CollaborationManager(models.Manager):
                 rv.extend(join_qs.filter(state=state)[:limit])
         return rv
 
+    def autocreate_for_new_video(self, team_video):
+        languages = CollaborationLanguage.objects.for_team(team_video.team)
+        self.bulk_create([
+            Collaboration(team_video=team_video,
+                          language_code=cl.language_code)
+            for cl in languages
+        ])
+
     def update_auto_created(self, team, language_codes):
         """Update the auto-created collaborations.
 
