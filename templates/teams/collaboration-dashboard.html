@@ -12,6 +12,10 @@
 {% block view_content %}
 
     <div class="grid_8 view omega">
+        {% with "dashboard" as current %}
+            {% include 'teams/_tabs.html' %}
+        {% endwith %}
+
         {% if collaborations.joined %}
         <h2>{% trans "Your Collaborations" %}</h2>
         <table>
@@ -45,6 +49,9 @@
             </tr>
             {% endfor %}
         </table>
+        {% endif %}
+        {% if not collaborations.joined and not collaborations.can_join %}
+            <h2>{% trans "No collaborations to show" %}</h2>
         {% endif %}
     </div>
 

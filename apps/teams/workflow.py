@@ -869,9 +869,9 @@ class CollaborationWorkflow(models.Model):
     COMPLETION_REVIEWER = "R"
     COMPLETION_APPROVER = "P"
     COMPLETION_POLICY_CHOICES = (
-        (COMPLETION_ANYONE, 'Anyone'),
-        (COMPLETION_REVIEWER, 'Reviewer'),
-        (COMPLETION_APPROVER, 'Approver'),
+        (COMPLETION_ANYONE, 'Anyone endorses'),
+        (COMPLETION_REVIEWER, 'Reviewer endorses'),
+        (COMPLETION_APPROVER, 'Approver endorses'),
     )
 
     completion_policy = models.CharField(max_length=1,
