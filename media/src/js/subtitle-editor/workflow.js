@@ -72,14 +72,15 @@ var angular = angular || null;
         }
 
         $scope.endorse = function() {
-            if(EditorData.task_id === undefined || 
-                    EditorData.task_id === null) {
+            if(EditorData.task_id) {
+                $scope.$root.$emit('approve-task');
+            } else if(EditorData.collaboration_id) {
+                $scope.$root.$emit('endorse-collaboration');
+            } else {
                 $scope.$root.$emit('save', {
                     allowResume: false,
                     markComplete: true,
                 });
-            } else {
-                $scope.$root.$emit('approve-task');
             }
         }
 

@@ -49,9 +49,26 @@
                 pane: true
             };
         }
+        else if (EditorData.collaboration_id) {
+            $scope.modulesOpen = {
+                pane: true
+            };
+
+            $scope.modulesEnabled = {
+                endorse: true,
+                pane: true
+            };
+        }
+
+        $scope.endorseDisabled = function() {
+            return $scope.workingSubtitles.subtitleList.subtitles.length == 0;
+        };
 
         $scope.approve = function() {
             $scope.$root.$emit('approve-task');
+        };
+        $scope.endorse = function() {
+            $scope.$root.$emit('endorse-collaboration');
         };
         $scope.toggleDocking = function(module) {
             $scope.modulesOpen[module] = !$scope.modulesOpen[module];

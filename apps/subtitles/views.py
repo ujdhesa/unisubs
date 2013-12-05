@@ -28,6 +28,7 @@ from django.http import HttpResponse
 from django.db.models import Count
 from django.contrib import messages
 from django.template import RequestContext
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
@@ -159,6 +160,29 @@ def get_task_for_editor(video, language_code):
     else:
         return None
 
+def get_collaborator_for_editor(request, video, language_code):
+    """Get a Collaborator object to for the subtitle editor
+
+    :raises PermissionDenied: user can't edit the collaboration
+    :returns: Collaboration or None
+    """
+    if 'collaboration_id' not in request.GET:
+        return None
+    try:
+        collaboration = video.get_team_video().collaboration_set.get(
+            language_code=language_code)
+    except ObjectDoesNotExist:
+        return None
+
+    try:
+        collaborator = collaboration.collaborators.get(user=request.user)
+    except ObjectDoesNotExist:
+        raise PermissionDenied("You can't edit the collaboration")
+
+    # set collaboration so that we don't have to query it again
+    collaborator.collaboration = collaboration
+    return collaborator
+
 def old_editor(request, video_id, language_code):
     video = get_object_or_404(Video, video_id=video_id)
     language = get_object_or_404(SubtitleLanguage, video=video,
@@ -189,11 +213,21 @@ def subtitle_editor(request, video_id, language_code):
         messages.error(request, _("You can't edit this subtitle because it's locked"))
         return redirect(video)
 
-    error_message = assign_task_for_editor(video, language_code, request.user)
-    if error_message:
-        messages.error(request, error_message)
+    collaborator = task = None
+    try:
+        collaborator = get_collaborator_for_editor(request, video,
+                                                   language_code)
+    except PermissionDenied, e:
+        messages.error(request, e.msg)
         return redirect(video)
-    task = get_task_for_editor(video, language_code)
+
+    if collaborator is None:
+        error_message = assign_task_for_editor(video, language_code, request.user)
+        if error_message:
+            messages.error(request, error_message)
+            return redirect(video)
+        task = get_task_for_editor(video, language_code)
+
     check_result = can_add_version(request.user, video, language_code)
     if not check_result:
         messages.error(request, check_result.message)
@@ -253,6 +287,9 @@ def subtitle_editor(request, video_id, language_code):
             editor_data['savedNotes'] = task.body
         editor_data['task_needs_pane'] = task.get_type_display() in ('Review', 'Approve')
         editor_data['team_slug'] = task.team.slug
+
+    if collaborator:
+        editor_data['collaboration_id'] = collaborator.collaboration_id
 
     return render_to_response("subtitles/subtitle-editor.html", {
         'video': video,

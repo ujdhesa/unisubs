@@ -60,32 +60,34 @@
         }
     });
 
-    module.value('EditorData', {
-        "canSync": true,
-        "canAddAndRemove": true,
-        "languageCode": "en",
-        "editingVersion": {
+    module.factory('EditorData', function() {
+        return {
+            "canSync": true,
+            "canAddAndRemove": true,
             "languageCode": "en",
-            "versionNumber": null,
-        },
-        "video": {
-            "id": "4oqOXzpPk5rU",
-            "videoURLs": [
-                "http://vimeo.com/25082970"
-            ],
-            "primaryVideoURL": "http://vimeo.com/25082970"
-        },
-        "languages": [
-            {
-                "is_rtl": false,
-                "numVersions": 0,
-                "editingLanguage": true,
-                "language_code": "en",
-                "pk": 23,
-                "versions": [],
-                "is_primary_audio_language": true,
-                "name": "English"
+            "editingVersion": {
+                "languageCode": "en",
+                "versionNumber": null,
             },
-        ],
+            "video": {
+                "id": "4oqOXzpPk5rU",
+                "videoURLs": [
+                    "http://vimeo.com/25082970"
+                ],
+                "primaryVideoURL": "http://vimeo.com/25082970"
+            },
+            "languages": [
+                {
+                    "is_rtl": false,
+                    "numVersions": 0,
+                    "editingLanguage": true,
+                    "language_code": "en",
+                    "pk": 23,
+                    "versions": [],
+                    "is_primary_audio_language": true,
+                    "name": "English"
+                },
+            ],
+        };
     });
 }).call(this);

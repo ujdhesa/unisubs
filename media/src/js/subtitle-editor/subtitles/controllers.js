@@ -186,6 +186,30 @@ var angular = angular || null;
             });
 
         };
+        $scope.saveAndEndorse = function() {
+            if($scope.changesMade) {
+                var message = 'Subtitles saved and endorsed. Redirecting…';
+            } else {
+                var message = 'Subtitles endorsed. Redirecting…';
+            }
+
+            $scope.saveSession(true).then(function(versionNumber) {
+                if ($scope.status === 'saved') {
+
+                    $scope.status = 'endorsing';
+
+                    SubtitleStorage.endorseCollaboration($scope.videoId, EditorData.editingVersion.languageCode).then(function onSuccess(response) {
+                        $scope.$root.$emit('show-loading-modal', message);
+                        window.location = $scope.primaryVideoURL;
+                    }, function onError(e) {
+                        $scope.status = 'error';
+                        $scope.showErrorModal();
+                        throw e;
+                    });
+                }
+            });
+
+        };
         $scope.save = function(options) {
             var defaults = {
                 force: false,
@@ -376,6 +400,9 @@ var angular = angular || null;
 
         $scope.$root.$on('approve-task', function() {
             $scope.saveAndApprove();
+        });
+        $scope.$root.$on('endorse-collaboration', function() {
+            $scope.saveAndEndorse();
         });
         $scope.$root.$on('save', function(evt, options) {
             $scope.save(options);

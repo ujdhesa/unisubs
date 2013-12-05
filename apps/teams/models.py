@@ -2522,17 +2522,24 @@ class Collaboration(models.Model):
             self.save()
         return collaborator
 
-    def mark_endorsed(self, team_member):
+    def mark_endorsed(self, team_member, collaborator=None):
         """Mark this collaboration endorsed by a user.
 
         :param team_member: TeamMember or User object
+        :param collaborator: Collaborator object for the team member.  If this
+        is passed in, it saves us a DB query.
         """
         try:
             if isinstance(team_member, TeamMember):
                 user = team_member.user
             else:
                 user = team_member
-            collaborator = self.collaborators.get(user=user)
+            if collaborator is None:
+                collaborator = self.collaborators.get(user=user)
+            else:
+                if collaborator.user != user:
+                    raise ValueError("Invalid collaborator: %s" %
+                                     collaborator)
         except Collaborator.DoesNotExist:
             raise PermissionDenied(_(
                 "You are not part of the collaboration for this video"))

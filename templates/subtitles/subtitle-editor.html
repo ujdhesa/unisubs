@@ -383,6 +383,11 @@ what is supported, check out tests/subtitleRepeatDirective.spec.
                         <button class="approve" ng-click="approve()">Accept</button>
                     </div>
                 </div>
+                <div class="endorse module" ng-show="modulesEnabled.endorse">
+                    <div class="content">
+                        <button class="endorse" ng-disabled="endorseDisabled()" ng-click="endorse()">Endorse</button>
+                    </div>
+                </div>
             </aside>
             <div class="errors">
                 <div ng-show="error" class="error">[[ error ]]</div>

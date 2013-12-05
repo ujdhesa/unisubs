@@ -36,15 +36,19 @@ var angular = angular || null;
         return url;
     };
     var getSubtitleSaveAPIUrl = function(videoId, languageCode) {
-        var url = API_BASE_PATH_VIDEOS + videoId +
-            '/languages/' + languageCode + '/subtitles/';
-        return url;
+        return (API_BASE_PATH_VIDEOS + videoId + '/languages/' + 
+            languageCode + '/subtitles/');
     };
     var getTaskSaveAPIUrl = function(teamSlug, taskID) {
         return API_BASE_PATH_TEAMS + teamSlug + '/tasks/' + taskID + '/';
     };
     var getVideoLangAPIUrl = function(videoId) {
         return API_BASE_PATH_VIDEOS + videoId + '/languages/';
+    };
+
+    var getEndorseAPIUrl = function(videoId, languageCode) {
+        return API_BASE_PATH_VIDEOS + videoId +
+            '/languages/' + languageCode + '/endorsements/';
     };
 
     /*
@@ -155,6 +159,23 @@ var angular = angular || null;
                 });
 
                 return promise;
+            },
+            endorseCollaboration: function(videoId, languageCode) {
+
+                var url = getEndorseAPIUrl(videoId, languageCode);
+                // To endorse the collaboration we post to the endorsements
+                // URL.  We don't need to send any data, the only thing that's
+                // important is the user endorsing it and that's already
+                // specified by the auth headers.
+                var promise = $http({
+                    method: 'POST',
+                    url: url,
+                    headers: authHeaders(),
+                    data:  {},
+                });
+
+                return promise;
+
             },
             getLanguages: function(callback) {
                 return _.values(languageMap);
