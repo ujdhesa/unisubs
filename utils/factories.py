@@ -35,7 +35,14 @@ class UserFactory(factory.DjangoModelFactory):
     email = factory.LazyAttribute(lambda u: '%s@example.com' % u.username)
     notify_by_email = True
     valid_email = True
-    password = make_password('password')
+    password = 'password'
+
+    @classmethod
+    def _generate(cls, create, attrs):
+        """Override the default _generate() to disable the post-save signal."""
+        if 'password' in attrs:
+            attrs['password'] = make_password(attrs['password'])
+        return super(UserFactory, cls)._generate(create, attrs)
 
     @factory.post_generation
     def languages(self, create, extracted, **kwargs):
@@ -84,6 +91,9 @@ class CollaborationTeamFactory(TeamFactory):
     workflow = factory.RelatedFactory(
         CollaborationWorkflowFactory, 'team',
         completion_policy=CollaborationWorkflow.COMPLETION_APPROVER)
+
+class TasksTeamFactory(TeamFactory):
+    workflow_style = workflow.WORKFLOW_TASKS
 
 class TeamMemberFactory(factory.DjangoModelFactory):
     FACTORY_FOR = TeamMember

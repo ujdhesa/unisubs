@@ -50,21 +50,24 @@ from apps.videos.tests.data import (
 )
 from apps.widget import video_cache
 from apps.widget.tests import create_two_sub_session, RequestMockup
-from utils import test_factories, test_utils
+from utils import test_utils
+from utils.factories import *
 
 class TestViews(WebUseTest):
-    fixtures = ['test.json', 'subtitle_fixtures.json']
-
     def setUp(self):
-        self._make_objects("iGzkk7nwWX8F")
-        cache.clear()
+        WebUseTest.setUp(self)
+        self.user = UserFactory.create(**self.auth)
+        self.video = VideoFactory.create()
+        self.video.followers.add(self.user)
+        mail.outbox = []
 
     def tearDown(self):
         mail.outbox = []
+        WebUseTest.tearDown(self)
 
     def test_video_url_make_primary(self):
         self._login()
-        v = Video.objects.get(video_id='iGzkk7nwWX8F')
+        v = self.video
         self.assertNotEqual(len(VideoUrl.objects.filter(video=v)), 0)
         # add another url
         secondary_url = 'http://www.youtube.com/watch?v=po0jY4WvCIc'
@@ -75,11 +78,11 @@ class TestViews(WebUseTest):
         url = reverse('videos:video_url_create')
         response = self.client.post(url, data)
         self.assertNotIn('errors', json.loads(response.content))
-        vid_url = 'http://www.youtube.com/watch?v=rKnDgT73v8s'
         # test make primary
-        vu = VideoUrl.objects.filter(video=v)
+        vu = VideoUrl.objects.filter(video=v).order_by('id')
         vu[0].make_primary()
-        self.assertEqual(VideoUrl.objects.get(video=v, primary=True).url, vid_url)
+        self.assertEqual(VideoUrl.objects.get(video=v, primary=True).url,
+                         vu[0].url)
         # check for activity
         self.assertEqual(len(Action.objects.filter(video=v, action_type=Action.EDIT_URL)), 1)
         vu[1].make_primary()
@@ -90,7 +93,7 @@ class TestViews(WebUseTest):
         self.assertEqual(VideoUrl.objects.filter(video=v)[0].url, secondary_url)
 
     def test_video_url_make_primary_team_video(self):
-        v = Video.objects.get(video_id='KKQS8EDG1P4')
+        v = self.video
         self.assertNotEqual(VideoUrl.objects.filter(video=v).count(), 0)
         # add another url
         secondary_url = 'http://www.youtube.com/watch?v=tKTZoB2Vjuk'
@@ -105,12 +108,12 @@ class TestViews(WebUseTest):
         self.client.login(**self.auth)
         response = self.client.post(url, data)
         self.assertNotIn('errors', json.loads(response.content))
-        vid_url = 'http://www.youtube.com/watch?v=KKQS8EDG1P4'
         # test make primary
-        vu = VideoUrl.objects.filter(video=v)
+        vu = VideoUrl.objects.filter(video=v).order_by('id')
         self.assertTrue(vu.count() > 1)
         vu[0].make_primary()
-        self.assertEqual(VideoUrl.objects.get(video=v, primary=True).url, vid_url)
+        self.assertEqual(VideoUrl.objects.get(video=v, primary=True).url,
+                         vu[0].url)
         # check for activity
         self.assertEqual(len(Action.objects.filter(video=v, action_type=Action.EDIT_URL)), 1)
         vu[1].make_primary()
@@ -192,7 +195,7 @@ class TestViews(WebUseTest):
     def test_video_url_remove(self):
         test_utils.invalidate_widget_video_cache.run_original_for_test()
         self._login()
-        v = Video.objects.get(video_id='iGzkk7nwWX8F')
+        v = self.video
         # add another url since primary can't be removed
         data = {
             'url': 'http://www.youtube.com/watch?v=po0jY4WvCIc',
@@ -220,7 +223,7 @@ class TestViews(WebUseTest):
 
     def test_video_url_deny_remove_primary(self):
         self._login()
-        v = Video.objects.get(video_id='iGzkk7nwWX8F')
+        v = self.video
         vurl_id = VideoUrl.objects.filter(video=v)[0].id
         # make primary
         vu = VideoUrl.objects.filter(video=v)
@@ -289,11 +292,10 @@ class TestViews(WebUseTest):
         self.assertEqual(response.status_code, 200)
 
     def test_history(self):
-        sl = self.video.subtitlelanguage_set.all()[:1].get()
-        sl.language = 'en'
-        sl.save()
+        v = pipeline.add_subtitles(self.video, 'en', None)
+        sl = v.subtitle_language
         self._simple_test('videos:translation_history',
-            [self.video.video_id, sl.language, sl.id])
+            [self.video.video_id, sl.language_code, sl.id])
 
     def _test_rollback(self):
         #TODO: Seems like roll back is not getting called (on models)
@@ -460,20 +462,20 @@ class VideoTitleTest(TestCase):
                           correct_title)
 
     def test_video_title(self):
-        video = test_factories.create_video(
+        video = VideoFactory.create(
             primary_audio_language_code='en', title='foo')
         self.check_video_page_title(video,
                                     'foo with subtitles | Amara')
 
     def test_video_language_title(self):
-        video = test_factories.create_video(
+        video = VideoFactory.create(
             primary_audio_language_code='en', title='foo')
         pipeline.add_subtitles(video, 'en', None, title="English Title")
         self.check_video_page_title(video,
                                     'English Title with subtitles | Amara')
 
     def test_video_language_title(self):
-        video = test_factories.create_video(
+        video = VideoFactory.create(
             primary_audio_language_code='en', title='Video Title')
         en_version = pipeline.add_subtitles(video, 'en', None,
                                          title="English Title")
@@ -484,7 +486,7 @@ class VideoTitleTest(TestCase):
     def test_video_language_title_translation(self):
         # for translated languages, we display the title in the same way.  In
         # the past we displayed it differently, this test is still useful
-        video = test_factories.create_video(
+        video = VideoFactory.create(
             primary_audio_language_code='en', title='Video Title')
         en_version = pipeline.add_subtitles(video, 'en', None,
                                          title="English Title")
@@ -498,7 +500,7 @@ class VideoTitleTest(TestCase):
     def test_video_language_title_fallback(self):
         # if a language doesn't have a title, then we fall back to the video
         # title (which is the english title, since that's the primary audoio
-        video = test_factories.create_video(
+        video = VideoFactory.create(
             primary_audio_language_code='en', title='Video Title')
         en_version = pipeline.add_subtitles(video, 'en', None)
         en = en_version.subtitle_language
@@ -507,19 +509,19 @@ class VideoTitleTest(TestCase):
 
 class MakeLanguageListTestCase(TestCase):
     def setUp(self):
-        self.video = test_factories.create_video(
+        self.video = VideoFactory.create(
             primary_audio_language_code='en')
 
     def setup_team(self):
-        self.team = test_factories.create_team(workflow_enabled=True)
+        self.team = TasksTeamFactory.create()
         workflow = self.team.get_workflow()
         workflow.review_allowed = workflow.REVIEW_IDS['Admin must review']
         workflow.approve_allowed = workflow.APPROVE_IDS['Admin must approve']
         workflow.save()
-        self.user = test_factories.create_team_member(self.team).user
-        self.team_video = test_factories.create_team_video(self.team,
-                                                           self.user,
-                                                           self.video)
+        self.user = TeamMemberFactory.create(team=self.team).user
+        self.team_video = TeamVideoFactory.create(team=self.team,
+                                                  added_by=self.user,
+                                                  video=self.video)
 
     def add_completed_subtitles(self, language, subtitles, **kwargs):
         language = self.add_not_completed_subtitles(language, subtitles,
