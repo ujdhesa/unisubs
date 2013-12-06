@@ -19,12 +19,22 @@
         {% if collaborations.joined %}
         <h2>{% trans "Your Collaborations" %}</h2>
         <table>
+            <tr>
+                <td>{% trans "Video" %}</td>
+                <td>{% trans "Language" %}</td>
+                <td>{% trans "Role" %}</td>
+                <td>{% trans "Endorsed?" %}</td>
+                <td>{% trans "Current State" %}</td>
+                <td width="100">{% trans "Actions" %}</td>
+            </tr>
             {% for collaboration, collaborator in collaborations.joined %}
             <tr>
                 <td><a href="{{ collaboration.video.get_absolute_url }}">{{ collaboration.video }}</a></td>
                 <td>{{ collaboration.get_language_code_display }} </td>
                 <td>{{ collaborator.get_role_display }} </td>
-                <td><a class="button" href="#">{% trans "Edit Subtitles" %}</a></td>
+                <td>{% if collaborator.endorsed %}&#10004;{% endif %}
+                <td>{{ collaboration.get_state_display }}</td>
+                <td><a class="button" href="{{ collaborator.edit_url }}">{% trans "Edit Subtitles" %}</a></td>
             </tr>
             {% endfor %}
         </table>

@@ -2251,7 +2251,8 @@ class CollaborationManager(models.Manager):
                            .filter(user=team_member.user,
                                    complete=False,
                                    collaboration__team=team_member.team)
-                           .select_related('collaboration'))
+                           .select_related('collaboration',
+                                           'collaboration__video'))
         joined = [(collaborator.collaboration, collaborator)
                       for collaborator in collaborator_qs]
 
@@ -2614,6 +2615,16 @@ class Collaborator(models.Model):
     def mark_endorsed(self):
         self.endorsement_date = Collaborator.now()
         self.save()
+
+    def edit_url(self):
+        url = reverse('subtitles:subtitle-editor', kwargs={
+            'video_id': self.collaboration.video.video_id,
+            'language_code': self.collaboration.language_code
+        })
+        if self.endorsed:
+            return url
+        else:
+            return "%s?collaboration_id=%s" % (url, self.collaboration_id)
 
 class CollaborationHistory(models.Model):
     """Tracks changes to a collaboration."""
