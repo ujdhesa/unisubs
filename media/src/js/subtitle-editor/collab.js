@@ -49,7 +49,8 @@
                 pane: true
             };
         }
-        else if (EditorData.collaboration_id) {
+        else if (EditorData.collaboration_id &&
+                EditorData.collaboration_state != 'being-subtitled') {
             $scope.modulesOpen = {
                 pane: true
             };

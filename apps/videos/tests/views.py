@@ -507,7 +507,7 @@ class VideoTitleTest(TestCase):
         self.check_language_page_title(en,
                           'Video Title with subtitles | Amara')
 
-class MakeLanguageListTestCase(TestCase):
+class LanguageListTestCase(TestCase):
     def setUp(self):
         self.video = VideoFactory.create(
             primary_audio_language_code='en')
@@ -682,4 +682,54 @@ class MakeLanguageListTestCase(TestCase):
             ('Arabic', 'complete', [], ar.get_absolute_url()),
             ('French', 'incomplete', ['incomplete'], fr.get_absolute_url()),
             ('Japanese', 'needs-timing', ['incomplete'], ja.get_absolute_url()),
+        ])
+
+class CollaborationTeamLanguageListTestCase(TestCase):
+    def setUp(self):
+        self.team = CollaborationTeamFactory()
+        self.team_video = TeamVideoFactory(team=self.team)
+        self.video = self.team_video.video
+        self.member1 = TeamMemberFactory(team=self.team)
+        self.member2 = TeamMemberFactory(team=self.team)
+        self.member3 = TeamMemberFactory(team=self.team)
+
+    def setup_video_language(self, **kwargs):
+        CollaborationFactory.create(team_video=self.team_video,
+                                    language_code='en', **kwargs)
+        # create a subtitle version and mark it complete.  We should not label
+        # it complete unless the collaboration is complete.
+        v = pipeline.add_subtitles(self.team_video.video, 'en', [
+            (0, 1000, "Hello World"),
+        ], complete=True)
+        return v.subtitle_language
+
+    def test_needs_editing(self):
+        language = self.setup_video_language(subtitler=self.member1)
+        self.assertEquals(views.LanguageList(self.video).items, [
+            ('English', 'needs-review', ['original', 'needs editing'],
+             language.get_absolute_url()),
+        ])
+
+    def test_needs_review(self):
+        language = self.setup_video_language(endorsed_subtitler=self.member1)
+        self.assertEquals(views.LanguageList(self.video).items, [
+            ('English', 'needs-review', ['original', 'needs review'],
+             language.get_absolute_url()),
+        ])
+
+    def test_needs_approval(self):
+        language = self.setup_video_language(endorsed_subtitler=self.member1,
+                                             endorsed_reviewer=self.member2)
+        self.assertEquals(views.LanguageList(self.video).items, [
+            ('English', 'needs-review', ['original', 'needs approval'],
+             language.get_absolute_url()),
+        ])
+
+    def test_complete(self):
+        language = self.setup_video_language(endorsed_subtitler=self.member1,
+                                             endorsed_reviewer=self.member2,
+                                             endorsed_approver=self.member3)
+        self.assertEquals(views.LanguageList(self.video).items, [
+            ('English', 'complete', ['original'],
+             language.get_absolute_url()),
         ])

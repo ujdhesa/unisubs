@@ -145,6 +145,10 @@ class Team(models.Model):
         (NOTIFY_HOURLY, _('Hourly')),
     )
 
+    WORKFLOW_DEFAULT = workflow.WORKFLOW_DEFAULT
+    WORKFLOW_TASKS = workflow.WORKFLOW_TASKS
+    WORKFLOW_COLLABORATION = workflow.WORKFLOW_COLLABORATION
+
     name = models.CharField(_(u'name'), max_length=250, unique=True)
     slug = models.SlugField(_(u'slug'), unique=True)
     description = models.TextField(_(u'description'), blank=True, help_text=_('All urls will be converted to links. Line breaks and HTML not supported.'))
@@ -2262,16 +2266,22 @@ class CollaborationManager(models.Manager):
         }
 
     def _can_join(self, team_member, joined, limit):
-        return (list(self._can_join_not_started(team_member, limit)) +
-                list(self._can_join_started(team_member, joined, limit)))
+        languages = team_member.user.get_language_codes()
+        if not languages:
+            # default to english if the user has no languages set
+            languages = ['en']
+        return (list(self._can_join_not_started(team_member, limit,
+                                                languages)) +
+                list(self._can_join_started(team_member, joined, limit,
+                                            languages)))
 
-    def _can_join_not_started(self, team_member, limit):
+    def _can_join_not_started(self, team_member, limit, languages):
         projects = list(Project.objects.all_projects_for_team(
             team_member.team))
         return self.filter(
             state=Collaboration.NEEDS_SUBTITLER,
             project__in=projects,
-            language_code__in=team_member.user.get_language_codes())[:limit]
+            language_code__in=languages)[:limit]
 
     def _states_member_can_join(self, team_member):
         workflow = team_member.team.workflow
@@ -2285,7 +2295,7 @@ class CollaborationManager(models.Manager):
             if not workflow.only_1_reviewer:
                 yield Collaboration.BEING_APPROVED
 
-    def _can_join_started(self, team_member, joined, limit):
+    def _can_join_started(self, team_member, joined, limit, languages):
         rv = []
         # calculate which Collaboration states the user can join
         states = []
@@ -2300,10 +2310,9 @@ class CollaborationManager(models.Manager):
             if not workflow.only_1_reviewer:
                 states.append(Collaboration.BEING_APPROVED)
         # query Collaborations for each state
-        user_languages = team_member.user.get_language_codes()
         join_qs = (self.
                    filter(team=team_member.team,
-                          language_code__in=user_languages)
+                          language_code__in=languages)
                    .exclude(id__in=[collab.id for (collab, _) in joined]))
         for state in states:
             if limit is None:
@@ -2420,6 +2429,28 @@ class Collaboration(models.Model):
     def get_absolute_url(self):
         return reverse('teams:collaboration', kwargs={
             'collaboration_id': self.id})
+
+    def get_state_name(self):
+        """Get a machine-friendly name for our state."""
+        if self.state == Collaboration.NEEDS_SUBTITLER:
+            return 'needs-subtitler'
+        elif self.state == Collaboration.BEING_SUBTITLED:
+            return 'being-subtitled'
+        elif self.state == Collaboration.NEEDS_REVIEWER:
+            return 'needs-reviewer'
+        elif self.state == Collaboration.BEING_REVIEWED:
+            return 'being-reviewed'
+        elif self.state == Collaboration.NEEDS_APPROVER:
+            return 'needs-approver'
+        elif self.state == Collaboration.BEING_APPROVED:
+            return 'being-approved'
+        elif self.state == Collaboration.COMPLETE:
+            return 'complete'
+        else:
+            raise ValueError("Invalid state: %s" % self.state)
+
+    def is_complete(self):
+        return self.state == Collaboration.COMPLETE
 
     @property
     def video(self):

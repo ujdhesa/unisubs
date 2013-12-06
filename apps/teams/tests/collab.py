@@ -489,21 +489,19 @@ class CollaborationManagerDashboardTestCase(CollaborationTestCase):
         for i in xrange(10):
             # make of collaborations that the user can join, these should be
             # limited by the limit we pass to for_dashboard()
-            CollaborationFactory(team_video__team=self.team,
-                                 language_code='en')
-            CollaborationFactory(team_video__team=self.team,
-                                 language_code='en',
-                                 endorsed_subtitler=self.member1)
-            CollaborationFactory(team_video__team=self.team,
-                                 language_code='en',
-                                 endorsed_subtitler=self.member1,
-                                 endorsed_reviewer=self.member2)
+            self.make_collaboration()
+            self.make_collaboration(endorsed_subtitler=self.member1)
+            self.make_collaboration(endorsed_subtitler=self.member1,
+                                    endorsed_reviewer=self.member2)
             # make collaborations that the user has joined.  We shouldn't
             # limit these
-            CollaborationFactory(team_video__team=self.team,
-                                 language_code='en',
-                                 subtitler=self.dashboard_viewer)
+            self.make_collaboration(subtitler=self.dashboard_viewer)
         for_dashboard = Collaboration.objects.for_dashboard(
             self.dashboard_viewer, can_join_limit=5)
         self.assertEquals(len(for_dashboard['can_join']), 15)
         self.assertEquals(len(for_dashboard['joined']), 10)
+
+    def test_default_to_english_if_no_languages_set(self):
+        self.dashboard_viewer.user.userlanguage_set.all().delete()
+        can_join = self.make_collaboration(language_code='en')
+        self.check_can_join([can_join])

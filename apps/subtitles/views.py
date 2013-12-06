@@ -289,7 +289,9 @@ def subtitle_editor(request, video_id, language_code):
         editor_data['team_slug'] = task.team.slug
 
     if collaborator:
-        editor_data['collaboration_id'] = collaborator.collaboration_id
+        collaboration = collaborator.collaboration
+        editor_data['collaboration_id'] = collaboration.id
+        editor_data['collaboration_state'] = collaboration.get_state_name()
 
     return render_to_response("subtitles/subtitle-editor.html", {
         'video': video,

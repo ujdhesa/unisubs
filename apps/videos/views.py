@@ -54,7 +54,7 @@ from apps.statistic.models import EmailShareStatistic
 from apps.subtitles import models as sub_models
 from apps.subtitles.forms import SubtitlesUploadForm
 from apps.subtitles.pipeline import rollback_to
-from apps.teams.models import Task
+from apps.teams.models import Task, Team, Collaboration
 from apps.videos import permissions
 from apps.videos.decorators import get_video_revision, get_video_from_code
 from apps.videos.forms import (
@@ -98,6 +98,16 @@ class LanguageList(object):
     def __init__(self, video):
         original_languages = []
         other_languages = []
+        self.team_video = video.get_team_video()
+        if self.team_video is not None:
+            self.workflow_style = self.team_video.team.workflow_style
+            if self.workflow_style == Team.WORKFLOW_COLLABORATION:
+                self.collaborations = dict(
+                    (c.language_code, c)
+                    for c in self.team_video.collaboration_set.all())
+        else:
+            self.workflow_style = None
+
         for lang in video.all_subtitle_languages():
             public_tip = lang.get_tip(public=False)
             if public_tip is None or public_tip.subtitle_count == 0:
@@ -116,45 +126,82 @@ class LanguageList(object):
         other_languages.sort(key=lambda li: li.name)
         self.items = original_languages + other_languages
 
+
     def _calc_status(self, lang):
         if lang.subtitles_complete:
-            if lang.has_public_version():
-                return 'complete'
+            if self.workflow_style == Team.WORKFLOW_TASKS:
+                return self._calc_status_complete_tasks(lang)
+            elif self.workflow_style == Team.WORKFLOW_COLLABORATION:
+                return self._calc_status_complete_collaborations(lang)
             else:
-                return 'needs-review'
+                return 'complete'
         else:
             if lang.is_synced(public=False):
                 return 'incomplete'
             else:
                 return 'needs-timing'
 
+    def _calc_status_complete_tasks(self, lang):
+        if lang.has_public_version():
+            return 'complete'
+        else:
+            return 'needs-review'
+
+    def _calc_status_complete_collaborations(self, lang):
+        try:
+            collaboration = self.collaborations.get(lang.language_code)
+        except KeyError:
+            return 'complete'
+        if collaboration.is_complete():
+            return 'complete'
+        else:
+            return 'needs-review'
+
     def _calc_tags(self, lang):
         tags = []
         if lang.is_primary_audio_language():
             tags.append(ugettext(u'original'))
 
-        team_video = lang.video.get_team_video()
-
         if not lang.subtitles_complete:
             tags.append(ugettext(u'incomplete'))
-        elif team_video is not None:
-            # subtiltes are complete, check if they are under review/approval.
-            incomplete_tasks = (Task.objects.incomplete()
-                                            .filter(team_video=team_video,
-                                                    language=lang.language_code))
-            for t in incomplete_tasks:
-                if t.type == Task.TYPE_IDS['Review']:
-                    tags.append(ugettext(u'needs review'))
-                    break
-                elif t.type == Task.TYPE_IDS['Approve']:
-                    tags.append(ugettext(u'needs approval'))
-                    break
-                else:
-                    # subtitles are complete, but there's a subtitle/translate
-                    # task for them.  They must have gotten sent back.
-                    tags.append(ugettext(u'needs editing'))
-                    break
+        if self.workflow_style == Team.WORKFLOW_TASKS:
+            tags.extend(self._calc_tags_tasks(lang))
+        elif self.workflow_style == Team.WORKFLOW_COLLABORATION:
+            tags.extend(self._calc_tags_collaborations(lang))
         return tags
+
+    def _calc_tags_tasks(self, lang):
+        # subtiltes are complete, check if they are under review/approval.
+        incomplete_tasks = (Task.objects.incomplete()
+                            .filter(team_video=self.team_video,
+                                    language=lang.language_code))
+        for t in incomplete_tasks:
+            if t.type == Task.TYPE_IDS['Review']:
+                return [ugettext(u'needs review')]
+            elif t.type == Task.TYPE_IDS['Approve']:
+                return [ugettext(u'needs approval')]
+            else:
+                # subtitles are complete, but there's a subtitle/translate
+                # task for them.  They must have gotten sent back.
+                return [ugettext(u'needs editing')]
+        return []
+
+    def _calc_tags_collaborations(self, lang):
+        try:
+            collaboration = self.collaborations.get(lang.language_code)
+        except KeyError:
+            return []
+        if collaboration.state in (Collaboration.NEEDS_SUBTITLER,
+                                   Collaboration.BEING_SUBTITLED):
+            return [ugettext(u'needs editing')]
+        elif collaboration.state in (Collaboration.NEEDS_REVIEWER,
+                                   Collaboration.BEING_REVIEWED):
+            return [ugettext(u'needs review')]
+        elif collaboration.state in (Collaboration.NEEDS_APPROVER,
+                                     Collaboration.BEING_APPROVED):
+            return [ugettext(u'needs approval')]
+        else:
+            return []
 
     def __iter__(self):
         return iter(self.items)

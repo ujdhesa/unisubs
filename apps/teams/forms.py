@@ -485,6 +485,12 @@ class WorkflowForm(forms.ModelForm):
 class _PermissionsFormWorkflowStyleWidget(forms.CheckboxInput):
     # For the permssions form, we use a checkbox to toggle between
     # WORKFLOW_DEFAULT and WORKFLOW_TASKS
+    def __init__(self, attrs=None):
+        forms.CheckboxInput.__init__(self, attrs, self.check_test)
+
+    def check_test(self, value):
+        return value == workflow.WORKFLOW_TASKS
+
     def value_from_datadict(self, data, files, name):
         if forms.CheckboxInput.value_from_datadict(self, data, files, name):
             return workflow.WORKFLOW_TASKS

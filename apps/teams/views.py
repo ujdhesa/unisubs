@@ -192,7 +192,7 @@ def create(request):
         if form.is_valid():
             team = form.save(user)
             messages.success(request, _("""
-                Your team has been created. Please set up you're permissions settings below.
+                Your team has been created. Please set up your permissions settings below.
                 """))
             return redirect(reverse("teams:settings_workflow", kwargs={"slug":team.slug}))
     else:
@@ -1211,11 +1211,11 @@ def dashboard(request, slug):
     if member and team.collaborations_enabled():
         return collaboration_dashboard(request, team, member)
     else:
-        return tasks_dashboard(request, team, member)
+        return tasks_dashboard(request, team, member, user)
 
 @timefn
 @render_to('teams/dashboard.html')
-def tasks_dashboard(request, team, member):
+def tasks_dashboard(request, team, member, user):
     if user:
         user_languages = set([ul for ul in user.get_languages()])
         user_filter = {'assignee':str(user.id),'language':'all'}
@@ -1312,6 +1312,12 @@ def tasks_dashboard(request, team, member):
 
 @render_to('teams/collaboration-dashboard.html')
 def collaboration_dashboard(request, team, member):
+    if not member.user.get_languages():
+        messages.warning(request, _(
+            'Showing English collaborations because you don\'t '
+            'have any languages set.<br>Please click '
+            '"Select your languages" on the top-right of the page'))
+
     return {
         'team': team,
         'member': member,

@@ -26,8 +26,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-from models import CustomUser, Announcement
-
+from models import CustomUser, Announcement, UserLanguage
 
 class CustomUserCreationForm(UserCreationForm):
     username = forms.RegexField(label=_("Username"), max_length=30, regex=r'^\w+$',
@@ -41,6 +40,10 @@ class CustomUserCreationForm(UserCreationForm):
         model = CustomUser
         fields = ("username", "email")
 
+class UserLanguageInline(admin.TabularInline):
+    model = UserLanguage
+    extra = 3
+
 class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
     list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff',
@@ -52,6 +55,10 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('username', 'email', 'password1', 'password2')}
         ),
     )
+
+    inlines = [
+        UserLanguageInline,
+    ]
 
 class AnnouncementAdmin(admin.ModelAdmin):
     formfield_overrides = {
