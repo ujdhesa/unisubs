@@ -71,10 +71,12 @@ var angular = angular || null;
         }
         $scope.adjustReferenceSize = function() {
             // Adjusts header size and then ref size so that refs and working look well in parallell
+/*
             var newHeaderSize = Math.max($('div.subtitles.reference .content').height(),
                                          $('div.subtitles.working .content').height());
             $('div.subtitles.reference .content').height(newHeaderSize);
             $('div.subtitles.working .content').height(newHeaderSize);
+*/
             if($scope.referenceSubtitles.subtitleList.length() > 0 && ($scope.referenceSubtitles.subtitleList.length() == $scope.workingSubtitles.subtitleList.length())) {
                 var $reference = $('div.subtitles.reference').first();
                 var $working = $('div.subtitles.working').first();
