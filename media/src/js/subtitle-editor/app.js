@@ -69,23 +69,16 @@ var angular = angular || null;
         $scope.toggleTimelineShown = function() {
             $scope.timelineShown = !$scope.timelineShown
         }
-        // This is to experiement, will disapear soon
-        setInterval(function(){
-             var newHeaderSize = 48 + Math.max($('div.subtitles.reference .content').height(),
-                                         $('div.subtitles.working .content').height());
+        $scope.keepHeaderSizeSync = function() {
+            var newHeaderSize = Math.max($('div.subtitles.reference .content').outerHeight(),
+                                         $('div.subtitles.working .content').outerHeight());
             $('div.subtitles.reference .content').css('min-height', '' + newHeaderSize + 'px');
             $('div.subtitles.working .content').css('min-height', '' + newHeaderSize + 'px');
-        },1000);
-
+        };
+        // TODO: what is the angularjs way to bind functions to DOM events?
+        $( "div.subtitles .content" ).change($scope.keepHeaderSizeSync);
         $scope.adjustReferenceSize = function() {
-            // Adjusts header size and then ref size so that refs and working look well in parallell
-/*
-            var newHeaderSize = Math.max($('div.subtitles.reference .content').height(),
-                                         $('div.subtitles.working .content').height());
-            $('div.subtitles.reference .content').height(newHeaderSize);
-            $('div.subtitles.working .content').height(newHeaderSize);
-*/
-            
+            $scope.keepHeaderSizeSync();
             if($scope.referenceSubtitles.subtitleList.length() > 0 && ($scope.referenceSubtitles.subtitleList.length() == $scope.workingSubtitles.subtitleList.length())) {
                 var $reference = $('div.subtitles.reference').first();
                 var $working = $('div.subtitles.working').first();
