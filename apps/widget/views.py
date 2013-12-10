@@ -301,6 +301,11 @@ def download_subtitles(request, format):
     lang_id = request.GET.get('lang_pk')
     revision = request.GET.get('revision', None)
 
+
+    if format == "txt(transcript)":
+        #Changing mapping of txt(transcript) to "trans" due to babelsubs mappings
+        format = "trans"
+
     if not video_id:
         #if video_id == None, Video.objects.get raise exception. Better show 404
         #because video_id is required
@@ -343,6 +348,11 @@ def download_subtitles(request, format):
     # since this is a downlaod, we can afford not to escape tags, specially true
     # since speaker change is denoted by '>>' and that would get entirely stripped out
     response = HttpResponse(subs_text, mimetype="text/plain")
+
+    if format == "trans":
+        #Changing ".trans" to ".txt" after subs are created for TXT Transcript
+        format = "txt"
+
     original_filename = '%s.%s' % (video.lang_filename(language.language_code), format)
 
     if not 'HTTP_USER_AGENT' in request.META or u'WebKit' in request.META['HTTP_USER_AGENT']:

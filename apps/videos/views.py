@@ -87,7 +87,7 @@ rpc_router = RpcRouter('videos:rpc_router', {
 
 # .e.g json, nor include aliases
 AVAILABLE_SUBTITLE_FORMATS_FOR_DISPLAY = [
-    'dfxp',  'sbv', 'srt', 'ssa', 'txt', 'vtt',
+    'dfxp',  'sbv', 'srt', 'ssa', 'txt', 'txt(transcript)', 'vtt',
 ]
 
 LanguageListItem = namedtuple("LanguageListItem", "name status tags url")
