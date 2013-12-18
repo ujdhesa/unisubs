@@ -44,12 +44,25 @@
                 <fieldset>
                     <legend>Display Settings</legend>
 
-                    <label for="id_logo">Logo/Banner</label>
-                    {% if team.logo %}
-                        <img id="current_logo" src="{{ team.medium_logo_thumbnail }}"/>
-                    {% endif %}
-                    <input type="file" id="id_logo" name="logo" />
-                    <p class="notation">Max 940 x 235</p>
+                    <div class="group">
+                        <div class="logo-field">
+                            <label for="id_logo">{% trans 'Logo/Banner' %}</label>
+                            {% if team.logo %}
+                                <img src="{{ team.logo_thumbnail_medium }}"/>
+                            {% endif %}
+                            <input type="file" id="id_logo" name="logo" />
+                            <p class="notation">{% trans 'Max 940 x 235' %}</p>
+                        </div>
+
+                        <div class="logo-field">
+                            <label for="id_square_logo">{% trans 'Square Logo' %}</label>
+                            {% if team.square_logo %}
+                                <img src="{{ team.square_logo_thumbnail }}"/>
+                            {% endif %}
+                            <input type="file" id="id_square_logo" name="square_logo" />
+                            <p class="notation">{% trans 'Recommended size: 100 x 100' %}</p>
+                        </div>
+                    </div>
 
                     <label for="id_is_visible">{{ form.is_visible }} Publicly visible?</label>
                 </fieldset>

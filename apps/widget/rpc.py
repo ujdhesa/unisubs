@@ -61,15 +61,19 @@ yt_logger = logging.getLogger("youtube-ei-error")
 ALL_LANGUAGES = settings.ALL_LANGUAGES
 LANGUAGES_MAP = dict(ALL_LANGUAGES)
 
-def add_general_settings(request, dict):
-    dict.update({
-            'writelock_expiration' : models.WRITELOCK_EXPIRATION,
-            'embed_version': settings.EMBED_JS_VERSION,
-            'languages': ALL_LANGUAGES,
-            'metadata_languages': settings.METADATA_LANGUAGES
-            })
+def get_general_settings(request):
+    general_settings = {
+        'writelock_expiration' : models.WRITELOCK_EXPIRATION,
+        'embed_version': settings.EMBED_JS_VERSION,
+        'languages': ALL_LANGUAGES,
+        'metadata_languages': settings.METADATA_LANGUAGES
+    }
     if request.user.is_authenticated():
-        dict['username'] = request.user.username
+        general_settings['username'] = request.user.username
+    return general_settings
+
+def add_general_settings(request, dict):
+    dict.update(get_general_settings(request))
 
 class Rpc(BaseRpc):
     # Logging

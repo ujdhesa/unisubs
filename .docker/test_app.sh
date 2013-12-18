@@ -76,7 +76,7 @@ if [ ! -z "$RUN_SELENIUM" ] ; then
     DEBIAN_FRONTEND=noninteractive apt-get install -y xvfb python-software-properties dbus-x11 x11-xserver-utils flashplugin-installer
     apt-get install -y firefox
     sleep 5
-    CMD='xvfb-run --auto-servernum --server-args="-screen 0 2048x1600x24" $VE_DIR/bin/python manage.py test webdriver_testing --settings=test_settings --with-xunit'
+    CMD="xvfb-run --auto-servernum --server-args='-screen 0 2048x1600x24' $VE_DIR/bin/python manage.py test webdriver_testing --settings=test_settings --with-xunit"
 fi
 
 echo "Running Tests..."

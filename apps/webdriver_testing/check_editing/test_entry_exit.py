@@ -103,7 +103,7 @@ class TestCaseEntryExit(WebdriverTestCase):
         self.video_lang_pg.edit_subtitles()
         self.sub_editor.open_in_beta_editor()
         self.assertEqual('English', self.editor_pg.selected_ref_language())
-        self.assertEqual('English subtitles', 
+        self.assertEqual('Editing English\u2026', 
                           self.editor_pg.working_language())
         self.editor_pg.exit()
 
@@ -131,7 +131,7 @@ class TestCaseEntryExit(WebdriverTestCase):
         self.sub_editor.open_in_beta_editor()
         self.assertEqual('English', self.editor_pg.selected_ref_language())
         self.assertEqual('Version 6', self.editor_pg.selected_ref_version())
-        self.assertEqual('Swedish subtitles', 
+        self.assertEqual('Editing Swedish\u2026', 
                           self.editor_pg.working_language())
         self.editor_pg.exit()
 
@@ -177,7 +177,7 @@ class TestCaseEntryExit(WebdriverTestCase):
         self._old_to_new_sv_review()
         self.assertEqual('English', self.editor_pg.selected_ref_language())
         self.assertEqual('Version 6', self.editor_pg.selected_ref_version())
-        self.assertEqual('Swedish subtitles', 
+        self.assertEqual('Editing Swedish\u2026', 
                           self.editor_pg.working_language())
         self.editor_pg.exit()
 
@@ -188,7 +188,7 @@ class TestCaseEntryExit(WebdriverTestCase):
         """
         self.skipTest('Needs i2388 fixed')
         self._old_to_new_sv_review()
-        self.assertEqual('Swedish subtitles', 
+        self.assertEqual('Editing Swedish\u2026', 
                           self.editor_pg.working_language())
         self.editor_pg.exit_to_full_editor()
         self.assertEqual('Review subtitles', self.sub_editor.dialog_title())
@@ -198,7 +198,7 @@ class TestCaseEntryExit(WebdriverTestCase):
 
         """
         video, tv = self._old_to_new_sv_review()
-        self.assertEqual('Swedish subtitles', 
+        self.assertEqual('Editing Swedish\u2026', 
                           self.editor_pg.working_language())
         self.editor_pg.approve_task()
         self.assertEqual(video.title, 

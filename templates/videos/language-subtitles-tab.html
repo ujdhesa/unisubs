@@ -39,7 +39,7 @@
                 <ul>
                   {% for format_name in downloadable_formats %}
                      <li>
-                       <a href="{% url widget:download format_name %}?video_id={{ video.video_id }}&lang_pk={{ language.pk }}&revision={{ version.version_number }}">{{format_name|upper}}</a>
+                     <a href="{% subtitle_download_url version format_name %}">{{format_name|upper}}</a>
                     </li>
                   {% endfor %}
                 </ul>
@@ -64,18 +64,18 @@
             </p>
 
             <ol class="subtitles {% if language.is_rtl %}is_rtl{% endif %}">
-                <li class="title">
+                <li class="metadata">
                     <div class="field">{% trans "Title:" %}</div>
                     {{ version.title }}
                 </li>
-                <li class="description">
+                <li class="metadata">
                     <div class="field">{% trans "Description:" %}</div>
                     <div class="description">
                         {{ version.description|urlize|linebreaks }}
                     </div>
                 </li>
                 {% for field in metadata %}
-                <li>
+                <li class="metadata">
                     <div class="field">{{field.label }}:</div>
                     {{ field.content }}
                 </li>

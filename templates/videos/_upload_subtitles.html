@@ -1,10 +1,9 @@
 {% load i18n %}
 
+<a href="#" class="upload-subtitles icon" data-modal="upload_subs-div"><img src="{{ STATIC_URL}}images/upload-subtitles.png"></a>
 <p>
-    Already have subtitles for this video?
-    You can
-    <a href="#" id="upload-subtitles-link" data-modal="upload_subs-div">{% trans 'upload' %}</a>
-    them directly.
+    Already have subtitles for this video?<br/>
+    <a href="#" id="upload-subtitles-link" data-modal="upload_subs-div">{% trans 'Upload them directly.' %}</a>
 </p>
 
 <div id="upload_subs-div" style="display: none" class="msg_modal_wrap" >

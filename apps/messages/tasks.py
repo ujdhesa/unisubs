@@ -743,6 +743,7 @@ def send_video_comment_notification(comment_pk_or_instance, version_pk=None):
                 content_type=content_type, object=obj,
                 content=render_to_string('messages/new-comment.html', {
                     "video": video,
+                    "language": language,
                     "commenter": unicode(comment.user),
                     "commenter_url": comment.user.get_absolute_url(),
                     "version_url":version_url,

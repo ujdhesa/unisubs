@@ -83,7 +83,7 @@ class VideoLanguagePage(VideoPage):
         self.logger.info('Getting content and headers of dl link')
         r = requests.get(link)
         self.logger.info(r.content)
-        return r.headers
+        return r.content
 
     def displays_subtitles(self):
         subs =  self.get_elements_list(self._SUB_LINES)

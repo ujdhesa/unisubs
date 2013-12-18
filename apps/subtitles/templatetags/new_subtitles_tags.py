@@ -19,6 +19,7 @@
 import string
 
 from django import template
+from django.core.urlresolvers import reverse
 from django.utils.encoding import force_unicode
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
@@ -95,3 +96,17 @@ def render_subtitles(subtitle_version):
         else:
             parts.append(text_template.substitute(text=item.text))
     return mark_safe(u"\n".join(parts))
+
+@register.simple_tag
+def subtitle_download_url(version, format_name):
+    filename = '.'.join([
+        version.title_display().replace('.', '_'),
+        version.language_code
+    ])
+    return reverse('subtitles:download', kwargs={
+        'video_id': version.video.video_id,
+        'language_code': version.language_code,
+        'filename': filename,
+        'format': format_name,
+        'version_number': version.version_number,
+    })

@@ -385,7 +385,7 @@ class TestCaseDemandReports(WebdriverTestCase):
         bill = 'user-data/%s' % report.csv_file
         entries = self._bill_dict(bill)
         self.logger.info(entries)
-        self.assertEqual(12, len(entries))
+        self.assertEqual(18, len(entries))
 
     def test_professional_svcs_report(self):
         """Professional svcs report only contains approved videos."""
@@ -544,7 +544,7 @@ class TestCaseDemandReports(WebdriverTestCase):
         self.assertEqual(8, len(entries))
 
     def test_translators_no_review(self):
-        """Profession services report generates when no review tasks.
+        """Translators report generates when no review tasks.
         
         """
         team = self.create_workflow_team()
@@ -567,8 +567,7 @@ class TestCaseDemandReports(WebdriverTestCase):
         report.process()
         bill = 'user-data/%s' % report.csv_file
         entries = self._bill_dict(bill)
-        # expect 13 entries from the main team + 1 from the no review team
-        self.assertEqual(2, len(entries))
+        self.assertEqual(4, len(entries))
 
     def test_download_professional(self):
         """Check generation and download of professional services report.
@@ -606,7 +605,7 @@ class TestCaseDemandReports(WebdriverTestCase):
         report_dl = self.billing_pg.check_latest_report_url()
         self.logger.info(report_dl)
         # 1 header + 12 entries
-        self.assertEqual(13, len(report_dl))
+        self.assertEqual(19, len(report_dl))
 
 
 

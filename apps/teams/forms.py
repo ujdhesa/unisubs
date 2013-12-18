@@ -463,18 +463,28 @@ class GuidelinesMessagesForm(forms.Form):
     guidelines_review = forms.CharField(max_length=4000, required=False, widget=forms.Textarea)
 
 class RenameableSettingsForm(forms.ModelForm):
-    logo = forms.ImageField(validators=[MaxFileSizeValidator(settings.AVATAR_MAX_SIZE)], required=False)
+    logo = forms.ImageField(
+        validators=[MaxFileSizeValidator(settings.AVATAR_MAX_SIZE)],
+        required=False)
+    square_logo = forms.ImageField(
+        validators=[MaxFileSizeValidator(settings.AVATAR_MAX_SIZE)],
+        required=False)
 
     class Meta:
         model = Team
-        fields = ('name', 'description', 'logo', 'is_visible')
+        fields = ('name', 'description', 'logo', 'square_logo', 'is_visible')
 
 class SettingsForm(forms.ModelForm):
-    logo = forms.ImageField(validators=[MaxFileSizeValidator(settings.AVATAR_MAX_SIZE)], required=False)
+    logo = forms.ImageField(
+        validators=[MaxFileSizeValidator(settings.AVATAR_MAX_SIZE)],
+        required=False)
+    square_logo = forms.ImageField(
+        validators=[MaxFileSizeValidator(settings.AVATAR_MAX_SIZE)],
+        required=False)
 
     class Meta:
         model = Team
-        fields = ('description', 'logo', 'is_visible')
+        fields = ('description', 'logo', 'square_logo', 'is_visible')
 
 class WorkflowForm(forms.ModelForm):
     class Meta:

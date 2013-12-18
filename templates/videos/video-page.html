@@ -1,41 +1,42 @@
 {% extends "base.html" %}
 
-{% block body_attrs %}id="video_profile" class="v1 video_view"{% endblock %}
+{% block body_attrs %}id="video_profile" class="v1 video_view" data-video-id="{{ video.video_id}}" data-video-url="{{ video.get_video_url|safe }}"{% endblock %}
 {% block html_attrs %}id="video_view"{% endblock %}
 
 {% load comments i18n subtitles_tags teams_tags videos_tags media_compressor %}
 
 {% block css %}
-    {{ block.super }}
-    {% include_bundle "video_history" %}
-    {% include_bundle "widget-css"%}
+{{ block.super }}
+{% include_bundle "video_history" %}
+{% include_bundle "widget-css"%}
 {% endblock %}
 
-    {% block scripts %}
-        {{ block.super }}
-        {% include_bundle "unisubs-onsite-compiled" %}
-        <script src="{% url videos:rpc_api %}" type="text/javascript"></script>
-        {% with write_video_type_js as jsinclude %}{% if jsinclude %}{% write_video_type_js video %}{% endif %}{% endwith %}
-        <script type="text/javascript">
-            {% if team.workflow_enabled %}
-                window.VIDEO_TEAM_WORKFLOW_ENABLED = true;
-            {% else %}
-                window.VIDEO_TEAM_WORKFLOW_ENABLED = false;
-            {% endif %}
-        </script>
-    {% endblock %}
+{% block scripts %}
+{{ block.super }}
+{% include_bundle "unisubs-onsite-compiled" %}
+<script src="{% url videos:rpc_api %}" type="text/javascript"></script>
+{% with write_video_type_js as jsinclude %}{% if jsinclude %}{% write_video_type_js video %}{% endif %}{% endwith %}
+<script type="text/javascript">
+    {% if team.workflow_enabled %}
+    window.VIDEO_TEAM_WORKFLOW_ENABLED = true;
+{% else %}
+window.VIDEO_TEAM_WORKFLOW_ENABLED = false;
+{% endif %}
+window.WIDGET_SETTINGS = {{ widget_settings|safe }};
+</script>
+{% endblock %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block opengraph-head %}
-    {{block.super}}
-    <meta property="og:title" content="{{ page_title }}" />
-    <meta property="og:type" content="video"/>
-    <meta property="og:url" content="http://{{ current_site.domain }}{{ video.get_absolute_url }}"/>
-    {% if video.thumbnail %}
-    <meta property="og:image" content="{{ video.get_thumbnail }}" />
-    {% else %}
-    <meta property="og:image" content="{{ STATIC_URL }}images/small_logo.png" />
+{{block.super}}
+<meta property="og:title" content="{{ page_title }}" />
+<meta property="og:type" content="video"/>
+<meta property="og:url" content="http://{{ current_site.domain }}{{ video.get_absolute_url }}"/>
+{% if video.thumbnail %}
+<meta property="og:image" content="{{ video.get_thumbnail }}" />
+{% else %}
+<meta property="og:image" content="{{ STATIC_URL }}images/small_logo.png" />
     {% endif %}
 
     <meta property="og:site_name" content="Amara"/>
@@ -51,92 +52,64 @@
     {% endif %}
 
     <div class="grid_4 context alpha">
-        <h2 class="main-title">
+        <h1 class="main-title">
             <a href="{{share_panel_permalink}}" {% if video.latest_version.language.is_rtl %}class="is-rtl"{% endif %} title="Video permalink">{{ video.title_display }}</a>
-        </h2>
-        <div {% if video.latest_version.language.is_rtl %}class="is-rtl"{% endif %}>
-            {% for field in metadata %}
-                <h4>{{ field.label}}: {{ field.content}} </h4>
-            {% endfor %}
-        </div>
-        {% with video.description as description %}
-            <div id="description"{% if description|length > 300 %} class="abbr collapsed"{% endif %}>
-                <div {% if video.latest_version.language.is_rtl %}class="is-rtl"{% endif %}>
-                    {{ description|urlize|linebreaks }}
-                </div>
-                {% if description|length > 300 %}
-                    <a class="expand" href="#">Show all ↓</a>
-                {% endif %}
-            </div>
-        {% endwith %}
+        </h1>
         <ul class="metrics">
             <li>
                 <div>
-                    <p>{{ video.followers.count }}</p>
-                    <h4>{% trans "Follower" %}{{ video.followers.count|pluralize }}</h4>
+                    <span class="count">{{ video.languages_count }}</span>
+                    {% trans "Language" %}{{ video.languages_count|pluralize }}
                 </div>
             </li>
             <li>
                 <div>
-                    <p>{{ video.comment_count }}</p>
-                    <h4>{% trans "Comment" %}{{ video.comment_count|pluralize }}</h4>
-                </div>
-            </li>
-            <li>
-                <div>
-                    <p>{{ video.languages_count }}</p>
-                    <h4>{% trans "Language" %}{{ video.languages_count|pluralize }}</h4>
-                </div>
-            </li>
-            <li class="last">
-                <div>
-                    <p>{{ video.view_count }}</p>
-                    <h4>{% trans "View" %}{{ video.view_count|pluralize }}</h4>
+                    <span class="count">{{ video.followers.count }}</span>
+                    {% trans "Follower" %}{{ video.followers.count|pluralize }}
                 </div>
             </li>
         </ul>
-        <div class="sharing-tools">
-            {% if shows_widget_sharing %}
-                {% include '_sharing_widget.html' %}
-            {% endif %}
-        </div>
-        <h3>
-            {% trans "View Subtitles" %}
-            {% if video.languages_count > 0 %}
-                ({{ video.languages_count }})
-            {% endif %}
-        </h3>
-        {% if language_list %}
-            <ul id="subtitles-menu" {% if video.languages_count > 14 %} class="list-collapsible"{% endif %}>
-                {% include 'videos/_left_navigation.html' %}
-                {% if video.languages_count > 14 %}
-                    <li class="expand">
-                        <a href="#"><span class="all">{% trans 'Show all' %} ↓</span><span class="less">{% trans 'Show less' %} ↑</span></a>
-                    </li>
-                {% endif %}
-            </ul>
-        {% else %}
-            {% if request.user|can_create_subtitles_for:video or request.user|can_create_translations_for:video %}
-                {% with video.get_team_video as team_video %}
-                    {% if team_video %}
-                        {% if team_video.team.workflow_enabled %}
-                            {% if team_video.task_set.incomplete.exists %}
-                                <p>{% trans "No subtitles yet." %} <a href="{% url teams:team_tasks slug=team_video.team.slug %}?team_video={{ team_video.pk }}">{% trans "View tasks for this video." %}</a></p>
-                            {% else %}
-                                {% trans "This video doesn't have any subtitles or tasks yet." %}
-                            {% endif %}
-                        {% else %}
-                            <p>{% trans "Be the first to " %}<a href="#" class="add_subtitles">{% trans 'create subtitles' %}</a>!</p>
-                        {% endif %}
+        <div class="contribute">
+            <h3>{% trans "Contribute" %}</h3>
+            {% if team %}
+                <p class="group">
+                    {% if team.square_logo %}
+                    <a href="{{ team.get_absolute_url }}"><img class="logo" src="{{ team.square_logo_thumbnail_small }}"></a>
                     {% else %}
-                        <p>{% trans "Be the first to " %}<a href="#" class="add_subtitles">{% trans 'create subtitles' %}</a>!</p>
+                    <a href="{{ team.get_absolute_url }}"><img class="logo" src="{{ STATIC_URL }}images/team.png"></a>
                     {% endif %}
-                {% endwith %}
-            {% else %}
-                <p>
-                    {% trans "This video doesn't have any subtitles yet." %}
+                    {% blocktrans with team.get_absolute_url as url %}
+                    <span class="team-link">This video is part of the <a href="{{ url }}">{{ team }}</a> team.</span>
+                    {% endblocktrans %}
                 </p>
             {% endif %}
+            {% if team.workflow_enabled and user_is_team_member %}
+            <a class="icon" href="{{ team_video.get_tasks_page_url }}"><img src="{{ STATIC_URL}}images/edit-subtitles.png"></a>
+            <p>
+                {% blocktrans with team_video.get_tasks_page_url as url %}
+                View <a href="{{ url }}">tasks for this video</a>.
+                {% endblocktrans %}
+            </p>
+            {% elif can_create_subs or can_create_trans %}
+                {% if video.languages_count = 0 and can_create_subs %}
+                    <a href="#" class="add-subtitles icon"><img src="{{ STATIC_URL}}images/edit-subtitles.png"></a>
+                    <p>{% trans "This video doesn't have any subtitles yet." %} <a href="#" class="add-subtitles">{% trans 'Create subtitles now!' %}</a></p>
+                {% elif video.languages_count > 0 and can_create_trans %}
+                    <a href="#" class="add-translation icon"><img src="{{ STATIC_URL}}images/edit-subtitles.png"></a>
+                    <p>{% trans "Don't see one of your languages?" %}<br /><a class="add-translation" id="add_translation " href="#">{% trans 'Create a new translation!' %}</a><p/>
+                {% endif %}
+                {% upload_subtitles video %}
+            </p>
+            {% endif %}
+        </div>
+        {% include 'videos/_language-list.html' %}
+        {% if shows_widget_sharing %}
+        <div class="sharing-tools group">
+            {% include '_sharing_widget.html' %}
+        </div>
+        {% endif %}
+        {% if user.managed_teams and not team %}
+            {% team_add_video_select %}
         {% endif %}
     </div>
     <div class="grid_8 view omega">

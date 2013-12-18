@@ -63,15 +63,63 @@ var angular = angular || null;
         $scope.scrollingSynced = true;
         $scope.workflow = new Workflow($scope.workingSubtitles.subtitleList);
         $scope.timelineShown = !($scope.workflow.stage == 'type');
-
         $scope.toggleScrollingSynced = function() {
             $scope.scrollingSynced = !$scope.scrollingSynced;
         }
-
         $scope.toggleTimelineShown = function() {
             $scope.timelineShown = !$scope.timelineShown
         }
-
+        $scope.keepHeaderSizeSync = function() {
+            var newHeaderSize = Math.max($('div.subtitles.reference .content').outerHeight(),
+                                         $('div.subtitles.working .content').outerHeight());
+            $('div.subtitles.reference .content').css('min-height', '' + newHeaderSize + 'px');
+            $('div.subtitles.working .content').css('min-height', '' + newHeaderSize + 'px');
+        };
+        // TODO: what is the angularjs way to bind functions to DOM events?
+        $( "div.subtitles .content" ).change($scope.keepHeaderSizeSync);
+        $scope.adjustReferenceSize = function() {
+            $scope.keepHeaderSizeSync();
+            if($scope.referenceSubtitles.subtitleList.length() > 0 && ($scope.referenceSubtitles.subtitleList.length() == $scope.workingSubtitles.subtitleList.length())) {
+                var $reference = $('div.subtitles.reference').first();
+                var $working = $('div.subtitles.working').first();
+                if($reference.height() < $working.height())
+                    $reference.last().height($reference.last().height() + $working.height() - $reference.height() );
+            }
+        }
+	/*
+	 * Might not be the right location
+	 * TODO: move this to the proper place (probably the SubtitleList
+	 * model.
+	 */
+        $scope.copyTimingOver = function() {
+            var nextWorkingSubtitle = $scope.workingSubtitles.subtitleList.firstSubtitle();
+            var nextReferenceSubtitle = $scope.referenceSubtitles.subtitleList.firstSubtitle();
+            while (nextWorkingSubtitle && nextReferenceSubtitle) {
+                $scope.workingSubtitles.subtitleList.updateSubtitleTime(nextWorkingSubtitle,
+                                                                        nextReferenceSubtitle.startTime,
+                                                                        nextReferenceSubtitle.endTime);
+                $scope.workingSubtitles.subtitleList.updateSubtitleParagraph(nextWorkingSubtitle,
+                                                                             $scope.referenceSubtitles.subtitleList.getSubtitleParagraph(nextReferenceSubtitle));
+                nextWorkingSubtitle = $scope.workingSubtitles.subtitleList.nextSubtitle(nextWorkingSubtitle);
+                nextReferenceSubtitle = $scope.referenceSubtitles.subtitleList.nextSubtitle(nextReferenceSubtitle);
+            }
+            while (nextWorkingSubtitle) {
+                $scope.workingSubtitles.subtitleList.updateSubtitleTime(nextWorkingSubtitle, -1, -1);
+                $scope.workingSubtitles.subtitleList.updateSubtitleParagraph(nextWorkingSubtitle, false);
+                nextWorkingSubtitle = $scope.workingSubtitles.subtitleList.nextSubtitle(nextWorkingSubtitle);
+            }
+            // Sent no matter anything has changed or not, ideally we'd only emit
+            // that if anything changed
+            $scope.$root.$emit('work-done');
+	}
+        $scope.copyTimingEnabled = function() {
+            return ($scope.workingSubtitles.subtitleList.length() > 0 &&
+                     $scope.referenceSubtitles.subtitleList.syncedCount > 0)
+        }
+        $scope.displayedTitle = function() {
+            return ($scope.workingSubtitles.title || 
+                     $scope.referenceSubtitles.title)
+        }
         $scope.timeline = {
             shownSubtitle: null,
             currentTime: null,
@@ -284,7 +332,6 @@ var angular = angular || null;
             video, SubtitleStorage);
         $scope.referenceSubtitles = new SubtitleVersionManager(
             video, SubtitleStorage);
-
         var editingVersion = EditorData.editingVersion;
 
         if(editingVersion.versionNumber) {

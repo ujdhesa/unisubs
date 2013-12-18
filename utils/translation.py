@@ -126,19 +126,24 @@ def languages_with_labels(langs):
     """
     return dict([code, get_language_label(code)] for code in langs)
 
-
-def is_rtl(lang):
+# This handles RTL info for languages where get_language_info() is not correct
+_RTL_OVERRIDE_MAP = {
     # there are languages on our system that are not on django.
-    # so, let's find and return the right value here:
-    if lang in ('arq', 'pnb',):
-        return True
-
+    'arq': True,
+    'pnb': True,
     # Forcing Azerbaijani to be a left-to-right language.
     # For: https://unisubs.sifterapp.com/projects/12298/issues/753035/comments 
-    if lang == 'az':
-        return False
+    'az': False,
+    # Force Urdu to be RTL (see gh-722)
+    'ur': True,
+    # Force Aramaic to be RTL (gh-1073)
+    'arc': True,
+}
 
+def is_rtl(language_code):
+    if language_code in _RTL_OVERRIDE_MAP:
+        return _RTL_OVERRIDE_MAP[language_code]
     try:
-        return get_language_info(lang)['bidi']
+        return get_language_info(language_code)['bidi']
     except KeyError:
         return False

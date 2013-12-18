@@ -69,27 +69,29 @@
             {% if filtered %}
             <a href="{% url teams:detail team.slug %}{% if query %}?q={{ query }}{% endif %}" class="button cancel">Clear</a>
             {% endif %}
-            <div class="filter-chunk">
-                <span class="inner">{% trans 'Project:' %}</span>
-                <select name="project" id="project">
-                    <option value="any"{% if project == None %} selected="selected"{% endif %}>{% trans 'any' %}</option>
-                    {% for project_choice in project_choices %}
-                    <option {% if project == project_choice %}selected="selected"{% endif %} value="{{ project_choice.slug }}">{{ project_choice.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="filter-chunk">
-                {% trans 'Language:' %}
-                <select name="lang-mode" id="lang_mode">
-                    <option value="+"{% if language_mode == '+' %} selected="selected"{% endif %}>{% trans "has" %}</option>
-                    <option value="-"{% if language_mode == '-' %} selected="selected"{% endif %}>{% trans "doesn't have" %}</option>
-                </select>
-                <select name="lang" id="lang">
-                    <option value="any"{% if language_code == None %}selected="selected"{% endif %}>{% trans 'any' %}</option>
-                    {% for code, name in language_choices %}
-                        <option {% if language_code == code %}selected="selected"{% endif %} value="{{ code }}">{{ name }}</option>
-                    {% endfor %}
-                </select>
+            <div class="group">
+                <div class="filter-chunk">
+                    <span class="inner">{% trans 'Project:' %}</span>
+                    <select name="project" id="project">
+                        <option value="any"{% if project == None %} selected="selected"{% endif %}>{% trans 'any' %}</option>
+                        {% for project_choice in project_choices %}
+                        <option {% if project == project_choice %}selected="selected"{% endif %} value="{{ project_choice.slug }}">{{ project_choice.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-chunk">
+                    {% trans 'Language:' %}
+                    <select name="lang-mode" id="lang_mode">
+                        <option value="+"{% if language_mode == '+' %} selected="selected"{% endif %}>{% trans "has" %}</option>
+                        <option value="-"{% if language_mode == '-' %} selected="selected"{% endif %}>{% trans "doesn't have" %}</option>
+                    </select>
+                    <select name="lang" id="lang">
+                        <option value="any"{% if language_code == None %}selected="selected"{% endif %}>{% trans 'any' %}</option>
+                        {% for code, name in language_choices %}
+                            <option {% if language_code == code %}selected="selected"{% endif %} value="{{ code }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div class="filter-chunk">
                 <span class="inner">{% trans 'Sort:' %}</span>
@@ -107,10 +109,10 @@
                         {% trans 'time, oldest' %}
                     </option>
                     <option {% if sort == '-subs' %}selected="selected"{% endif %} value="-subs">
-                        {% trans 'most subtitles' %}
+                        {% trans 'most completed languages' %}
                     </option>
                     <option {% if sort == 'subs' %}selected="selected"{% endif %} value="subs">
-                        {% trans 'least subtitles' %}
+                        {% trans 'least completed languages' %}
                     </option>
                 </select>
             </div>

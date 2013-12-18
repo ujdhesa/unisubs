@@ -6,7 +6,7 @@
         <a href="{% url videos:video video_id=search_record.video_id %}" title="{{ search_record.video_title }}">
             <img src="{{ search_record.thumbnail }}" alt="{{ search_record.title }} thumbnail">
         </a>
-        {% with tasks=search_record.task_count complete=search_record.num_completed_langs %}
+        {% with tasks=search_record.task_count language_count=search_record.num_total_langs %}
             {% if tasks %}
                 <a href="{% url teams:team_tasks slug=team.slug %}?team_video={{ search_record.team_video_pk }}&lang=all&assignee=anyone" class="languages">
                     {% blocktrans count tasks as num %}
@@ -17,7 +17,7 @@
                 </a>
             {% else %}
                 <a href="{% url videos:video video_id=search_record.video_id %}" class="languages">
-                    {% blocktrans count complete as num %}
+                    {% blocktrans count language_count as num %}
                         {{ num }} language
                     {% plural %}
                         {{ num }} languages

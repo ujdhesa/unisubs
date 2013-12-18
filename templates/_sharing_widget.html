@@ -10,29 +10,6 @@
         <li class="unisubs-facebook-like"><iframe src="https://www.facebook.com/plugins/like.php?href={{ share_panel_permalink|urlencode }}&layout=button_count&show_faces=false&width=150&action=like&colorscheme=light&height=25" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:150px; height:25px; padding: .45em .25em;" allowTransparency="true"></iframe></li>
     {% endif %}
 </ul>
-<p>
-<a href="#embed-modal" class="open-modal">{% trans 'Get Embed Code' %}</a>
-{% if language.get_language_display and not language.is_original %}
-    (with {{ language.get_language_display }} subtitles)
-{% endif %}
-</p>
-<div class="bootstrap">
-    <div id="embed-modal" class="modal">
-        <div class="modal-header">
-            <a href="#" class="close action-close">x</a>
-            <h3>Embed video</h3>
-            <p class="notation">Use the following code to embed this video. See our <a href="https://github.com/pculture/unisubs/wiki/Embed-Code-Usage-Guide" title="Embed usage guide">usage guide</a> for more details on embedding.</p>
-        </div>
-        <div class="modal-body">
-            <form>
-                <fieldset>
-                    <textarea readonly="readonly" rows="8">{{share_panel_embed_code}}</textarea>
-                </fieldset>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script type="text/javascript">
     jQuery('.unisubs-share .unisubs-twitter-share').click(function(){
         jQuery.get('{% url statistic:tw_update_share_statistic %}');

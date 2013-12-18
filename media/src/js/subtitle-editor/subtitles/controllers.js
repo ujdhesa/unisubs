@@ -502,6 +502,11 @@ var angular = angular || null;
                     madeChange = true;
                     break;
 
+                case 'changeParagraph':
+                    subtitleList.updateSubtitleParagraph(subtitle);
+                    madeChange = true;
+                    break;
+
                 case 'remove':
                     if($scope.currentEdit.isForSubtitle(subtitle)) {
                         $scope.currentEdit.finish(false);

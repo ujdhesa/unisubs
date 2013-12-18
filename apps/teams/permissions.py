@@ -76,22 +76,7 @@ def _perms_equal_or_greater(role, include_outsiders=False):
 # Utility functions
 def get_member(user, team):
     """Return the TeamMember object (or None) for the given user/team."""
-
-    if not user.is_authenticated():
-        return None
-
-    if hasattr(user, '_cached_teammember') and user._cached_teammember.get(team.pk):
-        return user._cached_teammember[team.pk]
-    else:
-        if not hasattr(user, '_cached_teammember'):
-            user._cached_teammember = {}
-
-        try:
-            user._cached_teammember[team.pk] = team.members.get(user=user)
-        except TeamMember.DoesNotExist:
-            user._cached_teammember[team.pk] = None
-
-        return user._cached_teammember[team.pk]
+    return team.get_member(user)
 
 def get_role(member):
     """Return the member's general role in the team.

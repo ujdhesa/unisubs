@@ -67,13 +67,11 @@
     <header class="main group">
         <section class="site left column">
             <h1>Amara</h1>
+	    <div class="video-title">
+	      <a title="[[ displayedTitle() ]]">[[ displayedTitle() ]]</a>
+	    </div>
         </section>
         <section class="video center column ng-cloak">
-            <span class="video-title">
-                <span class="subtitles-language">{{ language.get_language_code_display }}</span>
-                <span class="sep">•</span>
-                [[ workingSubtitles.title ]]
-            </span>
         </section>
         <section class="status right column group">
             <div ng-cloak class="ng-cloak" ng-controller="SaveSessionController">
@@ -124,7 +122,7 @@
             <div class="preview">
                 Amara editor preview. <a href="http://pculture.freshdesk.com/categories/6573/forums/80247/topics/28857" target="blank">Learn more or leave feedback</a>.<br>
             </div>
-            <div class="language-selections group"
+            <div class="language-selections group toolbar"
                 language-selector
                  ng-controller="LanguageSelectorController">
                 <div class="select">
@@ -170,10 +168,13 @@
 subtitle-repeat directive, see the working subtitles for more info
 -->
                         <li subtitle-repeat="referenceSubtitles.subtitleList"
-                            conditional-class="subtitle.isEmpty():empty"
+                            conditional-class="subtitle.isEmpty():empty,subtitle.startOfParagraph:paragraph-start"
                             class="subtitle-list-item">
                             <span class="timing">
                                 [[ subtitle.startTime | displayTime ]]
+                            </span>
+                            <span class="new-paragraph">
+                              ¶
                             </span>
                             <span class="subtitle-text">[[ subtitle.content() ]]</span>
                         </li>
@@ -218,20 +219,25 @@ subtitle-repeat directive, see the working subtitles for more info
                 <div class="slice3"></div>
             </div>
         </div>
-            <div class="workspace-tools group">
+            <div class="workspace-tools group toolbar">
                 <div class="subtitles-language">
                     {% blocktrans with language.get_language_code_display as language %}
-                    {{ language }} subtitles
+                    Editing {{ language }}&hellip;
                     {% endblocktrans %}
                 </div>
-                <div class="switches">
-                    <a class="timeline-display" href="#" ng-click="toggleTimelineShown()">
-                        <span ng-show="timelineShown">Hide</span>
-                        <span ng-show="!timelineShown">Show</span>
-                        timeline
-                    </a>
-                    <a ng-show="false" href="#" class="video-display">Hide video</a>
-                </div>
+		<div class="toolbox">
+		  <div class="toolbox-inside">
+		    <a href="#"><img src="{{ STATIC_URL }}images/subtitle-editor/glyphicons_halflings_135_wrench.png" alt="Tools"></img></a>
+		    <ul class="toolbox-menu">
+		      <li ng-show="copyTimingEnabled()"><a href="#" class="copyover" ng-click="copyTimingOver()" title="Copy timing and paragraphs from reference language">Copy Timing</a></li>
+                      <li><a href="#" ng-click="toggleTimelineShown()" class="show-timeline">
+			  <span ng-show="timelineShown">Hide</span>
+			  <span ng-show="!timelineShown">Show</span>
+			  Timeline
+                      </a></li>
+		    </ul>
+		  </div>
+		</div>
             </div>
             <div class="subtitles-wrapper"
                 ng-controller="WorkingSubtitlesController"
@@ -309,7 +315,7 @@ what is supported, check out tests/subtitleRepeatDirective.spec.
 -->
                         <li subtitle-repeat="workingSubtitles.subtitleList"
                             class="subtitle-list-item"
-                            conditional-class="subtitle.isEmpty():empty"
+                            conditional-class="subtitle.startOfParagraph:paragraph-start,subtitle.isEmpty():empty"
                             current-subtitle-class="current-subtitle"
                             bind-to-edit="currentEdit.draft"
                             edit-keydown="onEditKeydown"
@@ -328,6 +334,10 @@ what is supported, check out tests/subtitleRepeatDirective.spec.
                                     subtitle-click="insert"></a>
                             </div>
                             <span class="arrow"></span>
+                            <a href="#" class="new-paragraph"
+                               subtitle-click="changeParagraph">
+                              ¶
+                            </a>
                             <span class="subtitle-text">[[ subtitle.content() ]]</span>
                         </li>
 

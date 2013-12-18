@@ -1,3 +1,7 @@
-{{ commenter }} commented on "{{ video.title_display }}".
+{% load i18n %}{% if language %}{% blocktrans with lang_name=language.get_language_code_display title=video.title_display %}{{ commenter }} commented on the {{ lang_name }} Language of "{{ title }}".{% endblocktrans %}
 
-{{ protocol }}://{{ domain }}{{ video.get_absolute_url }}
+{{ protocol }}://{{ domain }}{{ language.get_absolute_url }}?tab=comments
+{% else %}{% blocktrans with title=video.title_display %}{{ commenter }} commented on "{{ title }}".{% endblocktrans %}
+
+{{ protocol }}://{{ domain }}{{ video.get_absolute_url }}?tab=comments
+{% endif %}

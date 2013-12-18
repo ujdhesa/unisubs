@@ -1818,6 +1818,26 @@ body.account {
         }
     }
 
+    #metadata {
+        margin-top: 1em;
+    }
+
+    #description {
+        line-height: 150%;
+
+        p {
+            margin-bottom: .5em;
+        }
+    }
+
+    .view #description {
+        margin-top: 1em;
+    }
+
+    .context #widget_div {
+        margin-top: 1em;
+    }
+
     ul#subtitles-menu {
         img, a, span {
             vertical-align: middle;
@@ -1833,13 +1853,20 @@ body.account {
     word-wrap: break-word;
     @include linear-gradient(right, hsla(0, 0%, 97%, 1), hsla(0, 0%, 100%, 1) 2%, hsla(0, 0%, 100%, 1));
 
-    p.permalink {
-        margin: -.5em 0 .5em;
+    .contribute {
+        p {
+            margin-bottom: 1em;
+        }
 
-        a {
-            color: $faint;
-            font-size: 11px;
-            text-decoration: none;
+        span.team-link {
+            padding-top: 0.25em;
+            display: block;
+        }
+
+        img.logo, a.icon {
+            display: inline-block;
+            float: left;
+            margin-right: 10px;
         }
     }
 
@@ -1877,14 +1904,6 @@ body.account {
         width: 289px !important;
     }
 
-    #description {
-        line-height: 150%;
-
-        p {
-            margin-bottom: .5em;
-        }
-    }
-
     a {
         text-decoration: none;
     }
@@ -1893,11 +1912,11 @@ body.account {
         word-wrap: break-word;
     }
 
-    h2 a {
+    h1 a, h2 a {
         color: inherit;
     }
 
-    h2, h3 {
+    h1, h2, h3 {
         font-weight: normal;
     }
 
@@ -1917,6 +1936,11 @@ body.account {
             a {
                 color: $dark;
             }
+        }
+
+        a#embed-link {
+            float: right;
+            font-size: 12px;
         }
     }
 
@@ -1964,6 +1988,7 @@ body.account {
     .notation {
         color: inherit;
     }
+
 }
 ol.subtitles {
     clear: both;
@@ -2015,7 +2040,7 @@ ol.subtitles {
                 direction: rtl;
                 text-align: right;
             }
-            &.title, &.description {
+            &.metadata {
                 direction: rtl;
                 text-align: right;
 
@@ -2155,6 +2180,7 @@ ol.subtitles-diff li{
 
         .chzn-drop {
             border-top: 1px solid $faint;
+            min-width: 200px;
         }
     }
     .chzn-container,
@@ -2295,52 +2321,39 @@ ol.subtitles-diff li{
 
 /* Metrics badge */
 .v1 .context .metrics {
-    border: 1px solid #eaeaea;
     color: #999;
-    float: left;
-    margin: 1em 0;
+    margin: 0;
     width: 100%;
+    display: table;
+    table-layout: fixed;
+    border-collapse: collapse;
     @include border-radius(3px);
     @include linear-gradient(top, hsla(0, 0%, 96%, 1), hsla(0, 0%, 98%, 1) 5%, hsla(0, 0%, 97%, 1));
 
     li {
-        border-right: 1px solid #eaeaea;
-        float: left;
+        margin: 0;
         padding: 0;
         text-align: center;
-        width: 24.7%;
+        display: table-cell;
+
+        border: 1px solid #eaeaea;
 
         a, div {
             color: #999;
             display: block;
             padding: .75em 0 .5em;
+            font-size: 0.92em;
 
-            p {
-                font-size: 1.25em;
+            span.count {
+                display: block;
+                font-size: 1.3636em;
                 line-height: 1em;
-                margin: 0;
                 text-shadow: 1px -1px 1px #fff;
-            }
-            h4 {
-                font-size: 11px;
-                font-weight: normal;
-                padding-bottom: 0;
-                padding-top: .25em;
+                padding-bottom: 0.25em;
             }
         }
         a:hover {
             color: #35424A;
-        }
-        &.last {
-            border: none;
-        }
-    }
-
-    &.simple li {
-        width: 49.8%;
-
-        &:last-child {
-            border: none;
         }
     }
 }
@@ -2443,6 +2456,11 @@ a.truncated-expand {
 #teams .view form.settings {
     margin-left: 1.5em;
     margin-right: 2.5em;
+
+    .logo-field {
+        float: left;
+        width: 50%;
+    }
 }
 #teams div.join div#apply-modal {
     div.modal-body {

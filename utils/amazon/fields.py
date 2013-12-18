@@ -47,6 +47,10 @@ class S3ImageFieldFile(FieldFile):
         return "%s_%sx%s_crop-smart_upscale-True_q85.jpg" % (
             self.name.replace('.', '_'), size[0], size[1])
 
+    def recreate_all_thumbnails(self):
+        """Recreate thumbnails for each size for our field's thumb_sizes """
+        self._create_all_thumbnails(self._open_image())
+
     def _create_all_thumbnails(self, image):
         """Create thumbnails for each size for our field's thumb_sizes """
 

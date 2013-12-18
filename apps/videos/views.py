@@ -49,12 +49,15 @@ from gdata.service import RequestError
 from vidscraper.errors import Error as VidscraperError
 
 import widget
+from widget import rpc as widget_rpc
 from apps.auth.models import CustomUser as User
 from apps.statistic.models import EmailShareStatistic
 from apps.subtitles import models as sub_models
 from apps.subtitles.forms import SubtitlesUploadForm
 from apps.subtitles.pipeline import rollback_to
 from apps.teams.models import Task, Team, Collaboration
+from apps.teams.permissions import (can_create_and_edit_subtitles,
+                                    can_create_and_edit_translations)
 from apps.videos import permissions
 from apps.videos.decorators import get_video_revision, get_video_from_code
 from apps.videos.forms import (
@@ -365,13 +368,25 @@ class VideoPageContext(dict):
         self['metadata'] = metadata.convert_for_display()
         self['language_list'] = LanguageList(video)
         self['shows_widget_sharing'] = video.can_user_see(request.user)
+        self['widget_settings'] = json.dumps(
+            widget_rpc.get_general_settings(request))
 
         _add_share_panel_context_for_video(self, video)
         self['task'] =  _get_related_task(request)
-        if video.get_team_video() is not None:
-            self['team'] = video.get_team_video().team
+        team_video = video.get_team_video()
+        if team_video is not None:
+            self['team'] = team_video.team
+            self['team_video'] = team_video
+            self['can_create_subs'] = can_create_and_edit_subtitles(
+                request.user, team_video)
+            self['can_create_trans'] = can_create_and_edit_translations(
+                request.user, team_video)
+            self['user_is_team_member'] = team_video.team.user_is_member(
+                request.user)
         else:
-            self['team'] = None
+            self['team'] = self['team_video'] = None
+            self['can_create_trans'] = self['can_create_subs'] = True
+            self['user_is_team_member'] = False
 
     @staticmethod
     def page_title(video):
@@ -577,6 +592,7 @@ class LanguagePageContext(dict):
         self['video'] = video
         self['language'] = language
         self['version'] = version
+        self['user'] = request.user
         if not tab_only:
             video.prefetch_languages(with_public_tips=True,
                                      with_private_tips=True)

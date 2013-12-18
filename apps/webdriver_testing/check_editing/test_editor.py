@@ -222,16 +222,16 @@ class TestCaseCenter(WebdriverTestCase):
     def test_working_language(self):
         video = Video.objects.all()[0]
         self.editor_pg.open_editor_page(video.video_id, 'en')
-        self.assertEqual('English subtitles', self.editor_pg.working_language())
+        self.assertEqual(u'Editing English\u2026', self.editor_pg.working_language())
         self.editor_pg.open_editor_page(video.video_id, 'tr')
-        self.assertEqual('Turkish subtitles', self.editor_pg.working_language())
+        self.assertEqual(u'Editing Turkish\u2026', self.editor_pg.working_language())
         self.editor_pg.exit()
 
 
     def test_page_title(self):
         video = Video.objects.all()[0]
         self.editor_pg.open_editor_page(video.video_id, 'en')
-        self.assertEqual(u'English \u2022 Open Source Philosophy',
+        self.assertEqual('Open Source Philosophy',
                          self.editor_pg.video_title())
         self.editor_pg.exit()
 

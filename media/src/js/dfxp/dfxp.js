@@ -212,7 +212,6 @@ var AmaraDFXPParser = function() {
     var that = this;
 
     this.init = function(xml) {
-
         // This second check for xml === null is for a specific IE9 bug.
         if (typeof xml === 'undefined' || xml === null) {
             return;
@@ -226,8 +225,8 @@ var AmaraDFXPParser = function() {
         // formatting for bold, italic, etc. Convert them back to Markdown.
         var $preXml = $(xml.documentElement);
         var $preSubtitles = $('p', $preXml);
-
-        // Convert subtitles from DFXP to Markdown.
+	
+        // Convert subtitles from DFXP to Markdown
         $preSubtitles.each(function() {
             var markdown = dfxpToMarkdown(this);
             $(this).text(markdown);

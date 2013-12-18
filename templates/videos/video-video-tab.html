@@ -1,46 +1,12 @@
 {% load widget i18n subtitles_tags teams_tags videos_tags %}
 <div class="tab" id="video-tab">
     {% widget widget_params %}
-    <div class="clearboth">
-        {% with video.get_team_video as team_video %}
-            {% if team_video and team_video.team.get_workflow.requires_review_or_approval %}
-                {% render_belongs_to_team_list team_video user %}
-            {% else %}
-                <div class="video-tools grid_4 alpha">
-                    <h3>{% trans "Contribute" %}</h3>
-                    <p>
-                        {% with can_create_subs=request.user|can_create_subtitles_for:video can_create_trans=request.user|can_create_translations_for:video %}
-                            {% if video.languages_count < 1 %}
-                                {% if can_create_subs %}
-                                    {% trans "This video doesn't have any subtitles yet" %} :( <a href="#" class="add_subtitles">{% trans 'Create subtitles now' %}</a>!
-                                {% endif %}
-                            {% else %}
-                                {% if can_create_trans %}
-                                    {% trans "Don't see one of your languages?" %}<br /><a class="add-translation-behavior" id="add_translation " href="#">{% trans 'Create a new translation' %}</a>!
-                                {% endif %}
-                            {% endif %}
-                            {% if can_create_subs or can_create_trans %}
-                                {% upload_subtitles video %}
-                            {% else %}
-                                {% trans 'Subtitles for this video are moderated. If it belongs to a team, try joining the team to contribute.' %}
-                            {% endif %}
-                        {% endwith %}
-                    </p>
-                </div>
-                {% if user.managed_teams and not team_video.team %}
-                    <div class="video-tools grid_4 omega">
-                        <h3>{% trans "Collaborate" %}</h3>
-                        {% team_add_video_select %}
-                    </div>
-                {% else %}
-                    {% if team_video.team %}
-                        <div class="video-tools grid_4 omega">
-                            <h3>{% trans "Collaborate" %}</h3>
-                            {% trans 'This video belongs to the' %} <a href="{% url teams:detail slug=team_video.team.slug %}">{{ team_video.team.name }} {% trans 'Translation Project' %}</a>.
-                        </div>
-                    {% endif %}
-                {% endif %}
-            {% endif %}
-        {% endwith %}
+    <div id="metadata" {% if video.latest_version.language.is_rtl %}class="is-rtl"{% endif %}>
+        {% for field in metadata %}
+            <h4>{{ field.label}}: {{ field.content}} </h4>
+        {% endfor %}
+    </div>
+    <div id="description"{% if video.latest_version.language.is_rtl %} class="is-rtl"{% endif %}>
+        {{ video.description|urlize|linebreaks }}
     </div>
 </div>

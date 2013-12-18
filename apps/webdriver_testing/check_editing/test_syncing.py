@@ -23,7 +23,6 @@ class TestCasePartialSync(WebdriverTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestCasePartialSync, cls).setUpClass()
-        cls.skipTest('slow')
         cls.data_utils = data_helpers.DataHelpers()
         cls.user = UserFactory.create(username = 'user')
         cls.create_modal = dialogs.CreateLanguageSelection(cls)

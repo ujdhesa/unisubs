@@ -32,7 +32,6 @@ urlpatterns = patterns(
     url(r'^widgetize_demo/(\w+)$', 'widgetize_demo'),
     url(r'^statwidget_demo.html$', 'statwidget_demo'),
     url(r'^video_demo/(\w+)$', 'video_demo'),
-    url(r'^download-subs/(?P<format>[\w]{3,})/$', 'download_subtitles',name='download'),
     url(r'^save_emailed_translations/$',
         'save_emailed_translations'),
 )

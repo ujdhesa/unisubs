@@ -246,6 +246,7 @@ class ApprovalTestBase(TestCase):
         self.admin = test_factories.create_team_member(team=self.team,
                                                        role=ROLE_ADMIN).user
         self.users = dict((unicode(u), u) for u in subtitlers + reviewers)
+        self.users[unicode(self.admin)] = self.admin
 
     def setup_videos(self):
         # make a bunch of languages that have moved through the review process
@@ -324,8 +325,7 @@ class ApprovalTestBase(TestCase):
 
     def add_approved_language(self, video, language_code, subtitler, reviewer):
         video_id = video.video_id
-        self.approved_languages.append(
-            video.subtitle_language(language_code))
+        self.approved_languages.append((video.video_id, language_code))
         self.approval_dates[video_id, language_code] = \
                 self.date_maker.current_date
         self.subtitled_languages[unicode(subtitler)].append((video_id,
@@ -349,8 +349,7 @@ class ApprovalTest(ApprovalTestBase):
         self.assertEquals(len(report_data), len(self.approved_languages))
         # check video ids and language codes
         self.assertEquals(set(report_data.keys()),
-                          set((lang.video.video_id, lang.language_code)
-                              for lang in self.approved_languages))
+                          set(self.approved_languages))
 
     def check_approver(self, report_data):
         for (video_id, language_code), row in report_data.items():
@@ -393,12 +392,14 @@ class ApprovalForUsersTest(ApprovalTestBase):
         return convert_rows_to_dicts(report.generate_rows())
 
     def check_report_rows(self, report_data):
-        # we should have 2 rows per approved language, since each language has
-        # a reviewer and subtitler
-        self.assertEquals(len(report_data), len(self.approved_languages) * 2)
+        # we should have 3 rows per approved language, since each language has
+        # a subtitler, reviewer, and approver
+        self.assertEquals(len(report_data), len(self.approved_languages) * 3)
         report_users = [r['User'] for r in report_data]
         for u, langs in self.reviewed_languages.items():
             self.assertEquals(report_users.count(u), len(langs))
+        self.assertEquals(report_users.count(unicode(self.admin)),
+                          len(self.approved_languages))
         self.assertEquals(report_users, list(sorted(report_users)))
 
     def check_videos_and_languages(self, report_data):
@@ -412,6 +413,8 @@ class ApprovalForUsersTest(ApprovalTestBase):
                     self.assertEquals(row['Task Type'], 'Subtitle')
             elif (video_id, language) in self.reviewed_languages[row['User']]:
                 self.assertEquals(row['Task Type'], 'Review')
+            elif row['User'] == unicode(self.admin):
+                self.assertEquals(row['Task Type'], 'Approve')
             else:
                 raise AssertionError("%s - %s was not subtitled or reviewed" %
                                      (video_id, language))
@@ -432,11 +435,17 @@ class ApprovalForUsersTest(ApprovalTestBase):
             video_id = row['Video ID']
             language = row['Language']
             if row['Task Type'] in ('Subtitle', 'Translate'):
-                subtitle_date = self.subtitle_dates[video_id, language]
-                self.assertEquals(row['Date'], report_date(subtitle_date))
+                self.assertEquals(
+                    row['Date'],
+                    report_date(self.subtitle_dates[video_id, language]))
             elif row['Task Type'] == 'Review':
-                review_date = self.review_dates[video_id, language]
-                self.assertEquals(row['Date'], report_date(review_date))
+                self.assertEquals(
+                    row['Date'],
+                    report_date(self.review_dates[video_id, language]))
+            elif row['Task Type'] == 'Approve':
+                self.assertEquals(
+                    row['Date'],
+                    report_date(self.approval_dates[video_id, language]))
 
     def check_minutes(self, report_data):
         # all subtitles are 90 seconds long, we should report this as 1.5
@@ -487,11 +496,17 @@ class ApprovalForUsersNoReviewTest(SimpleApprovalTestCase):
             end_date=self.date_maker.end_date(),
             type=BillingReport.TYPE_APPROVAL_FOR_USERS)
         report.teams.add(self.team)
-        report_data = group_report_rows(report.generate_rows(),
-                                        ('User',))
-        self.assertEquals(len(report_data), 1)
-        self.assertEquals(report_data[unicode(self.admin)]['Video ID'],
-                          self.video.video_id)
+        rows = report.generate_rows()
+        # This test is mostly testing that generate_rows() doesn't crash, but
+        # we may as well check a little bit of the data
+        report_data = group_report_rows(rows, ('User', 'Task Type'))
+        self.assertEquals(len(report_data), 2)
+        self.assertEquals(
+            report_data[unicode(self.admin), 'Subtitle']['Video ID'],
+            self.video.video_id)
+        self.assertEquals(
+            report_data[unicode(self.admin), 'Approve']['Video ID'],
+            self.video.video_id)
 
 class ApprovalReportSubtitleWithNoTimingTest(SimpleApprovalTestCase):
     # Test the approval for users type when review is disabled

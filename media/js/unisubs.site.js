@@ -616,17 +616,16 @@ var Site = function(Site) {
             that.Utils.truncateTextBlocks($('div.description'), 90);
         },
         video_view: function() {
-            $('.add_subtitles').click( function() {
-                widget_widget_div.selectMenuItem(
-                unisubs.widget.DropDown.Selection.IMPROVE_SUBTITLES);
+            $('.add-subtitles, .add-translation').click( function(evt) {
+                evt.preventDefault();
+                var $body = $('body');
+                var op = new unisubs.widget.SubtitleDialogOpener(
+                    $body.data('video-id'), $body.data('video-url'));
+                op.showStartDialog(null);
                 return false;
             });
-            $('.add-translation-behavior').click( function(e) {
-                e.preventDefault();
-                widget_widget_div.selectMenuItem(
-                unisubs.widget.DropDown.Selection.ADD_LANGUAGE);
-                return false;
-            });
+            unisubs.widget.WidgetController.makeGeneralSettings(
+                    window.WIDGET_SETTINGS);
             var tabLoader = new AHAHTabLoader();
             tabLoader.addLinks('.tabs');
             unisubs.messaging.simplemessage.displayPendingMessages();

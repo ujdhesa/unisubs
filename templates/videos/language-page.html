@@ -61,9 +61,23 @@
                 {{ language.title_display }}
             </a>
         </h2>
+        <ul class="metrics">
+            <li>
+                <div>
+                    <span class="count">{{ language.followers.count }}</span>
+                    {% trans "Follower" %}{{ language.followers.count|pluralize }}
+                </div>
+            </li>
+            <li>
+                <div>
+                    <span class="count">{{ version.subtitle_count }}</span>
+                    {% trans "Line" %}{{ version.subtitle_count|pluralize }}
+                </div>
+            </li>
+        </ul>
         {% widget widget_params %}
         {% if language.get_description %}
-            <div id="description"{% if language.get_description|length > 300 %} class="abbr collapsed"{% endif %}>
+            <div id="description"{% if language.get_description|length > 300 %} class="abbr collapsed{% endif %}">
                 <div {% if language.is_rtl %}class="is-rtl"{% endif %}>
                     {{ language.get_description|urlize|linebreaks }}
                 </div>
@@ -72,45 +86,12 @@
                 {% endif %}
             </div>
         {% endif %}
-        <ul class="metrics">
-            <li>
-                <div>
-                    <p>{{ language.followers.count }}</p>
-                    <h4>{% trans "Follower" %}{{ language.followers.count|pluralize }}</h4>
-                </div>
-            </li>
-            <li>
-                <div>
-                    <p>{{ language|get_comment_count }}</p>
-                    <h4>{% trans 'Comment' %}{{ language|get_comment_count|pluralize }}</h4>
-                </div>
-            </li>
-            <li>
-                <div>
-                    <p>{{ version.subtitle_count }}</p>
-                    <h4>{% trans "Line" %}{{ version.subtitle_count|pluralize }}</h4>
-                </div>
-            </li>
-        </ul>
+        {% include 'videos/_language-list.html' %}
         <div class="sharing-tools">
             {% if shows_widget_sharing %}
                 {% include '_sharing_widget.html' %}
             {% endif %}
         </div>
-        <h3>
-            {% trans "View Subtitles" %}
-            {% if video.languages_count > 0 %}
-                ({{ video.languages_count }})
-            {% endif %}
-        </h3>
-        <ul id="subtitles-menu" {% if video.languages_count > 14 %} class="list-collapsible"{% endif %}>
-            {% include 'videos/_left_navigation.html' %}
-            {% if video.languages_count > 14 %}
-                <li class="expand">
-                    <a href="#"><span class="all">{% trans 'Show all' %} ↓</span><span class="less">{% trans 'Show less' %} ↑</span></a>
-                </li>
-            {% endif %}
-        </ul>
     </div>
     <div class="grid_8 view omega">
         {% if user.is_authenticated %}

@@ -24,6 +24,7 @@ import subprocess
 from settings import *
 
 DEBUG = True
+EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 SITE_ID = 1
 SITE_NAME = 'unisubs-dev'
 SECRET_KEY = 'a9yr_yzp2vmj-2q1zq)d2+b^w(7fqu2o&jh18u9dozjbd@-$0!'

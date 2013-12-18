@@ -22,7 +22,7 @@
                   {% if language_url %}
                         <a href="{{ language_url }}#comments">
                   {% else %}
-                        <a href="http://{{ domain }}/{{ video.get_absolute_url }}#comments">
+                        <a href="http://{{ domain }}{{ video.get_absolute_url }}#comments">
                   {% endif %}
             {% endif %}comments page</a>. Thanks for your participation!</p>
      <a href="http://{{ domain }}{% filter rmlocale %}{% url videos:stop_notification video.video_id %}{% endfilter %}?u={{ user.id }}&h={{ hash }}">{% trans "Stop watching for changes on this video" %}</a>

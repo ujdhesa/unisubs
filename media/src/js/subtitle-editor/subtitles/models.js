@@ -49,7 +49,7 @@ var angular = angular || null;
     </tt>';
     };
 
-    function Subtitle(startTime, endTime, markdown) {
+    function Subtitle(startTime, endTime, markdown, startOfParagraph) {
         /* Represents a subtitle in our system
          *
          * Subtitle has the following properties:
@@ -60,6 +60,7 @@ var angular = angular || null;
         this.startTime = startTime;
         this.endTime = endTime;
         this.markdown = markdown;
+        this.startOfParagraph = startOfParagraph;
     }
 
     Subtitle.prototype.duration = function() {
@@ -141,7 +142,7 @@ var angular = angular || null;
          * to get a DraftSubtitle.
          * */
         Subtitle.call(this, parser.startTime(node), parser.endTime(node),
-                $(node).text().trim());
+                $(node).text().trim(), parser.startOfParagraph(node));
         this.node = node;
         this.id = id;
     }
@@ -218,30 +219,33 @@ var angular = angular || null;
         /*
          * Used when we are translating from one language to another.
          * It loads the latest subtitles for xml and inserts blank subtitles
-         * with the same timings into our subtitle list.
+         * with the same timings and paragraphs into our subtitle list.
          */
         var baseLanguageParser = new AmaraDFXPParser();
         baseLanguageParser.init(xml);
-        var timings = [];
+        var baseAttributes = [];
         baseLanguageParser.getSubtitles().each(function(index, node) {
             startTime = baseLanguageParser.startTime(node);
             endTime = baseLanguageParser.endTime(node);
+            startOfParagraph = baseLanguageParser.startOfParagraph(node);
             if(startTime >= 0 && endTime >= 0) {
-                timings.push({
+                baseAttributes.push({
                     'startTime': startTime,
                     'endTime': endTime,
+                    'startOfParagraph': startOfParagraph
                 });
             }
         });
-        timings.sort(function(s1, s2) {
+        baseAttributes.sort(function(s1, s2) {
             return s1.startTime - s2.startTime;
         });
         var that = this;
-        _.forEach(timings, function(timing) {
+        _.forEach(baseAttributes, function(baseAttribute) {
             var node = that.parser.addSubtitle(null, {
-                begin: timing.startTime,
-                end: timing.endTime,
+                begin: baseAttribute.startTime,
+                end: baseAttribute.endTime,
             });
+            that.parser.startOfParagraph(node, baseAttribute.startOfParagraph);
             that.subtitles.push(that.makeItem(node));
             that.syncedCount++;
         });
@@ -332,6 +336,10 @@ var angular = angular || null;
         if(subtitle.isSynced() && !wasSynced) {
             this.syncedCount++;
         }
+        if(!subtitle.isSynced() && wasSynced) {
+            this.syncedCount--;
+        }
+	
     }
 
     SubtitleList.prototype.updateSubtitleTime = function(subtitle, startTime, endTime) {
@@ -351,6 +359,22 @@ var angular = angular || null;
     SubtitleList.prototype.updateSubtitleContent = function(subtitle, content) {
         this._updateSubtitleContent(subtitle, content);
         this.emitChange('update', subtitle);
+    }
+
+    SubtitleList.prototype._updateSubtitleParagraph = function(subtitle, startOfParagraph) {
+        this.parser.startOfParagraph(subtitle.node, startOfParagraph);
+    }
+
+    SubtitleList.prototype.updateSubtitleParagraph = function(subtitle, startOfParagraph) {
+        // If startOfParagraph is not given, it is toggled
+        var newStartOfParagraph = (startOfParagraph == undefined) ? !(this.parser.startOfParagraph(subtitle.node)) : startOfParagraph;
+        this._updateSubtitleParagraph(subtitle, newStartOfParagraph);
+        subtitle.startOfParagraph = newStartOfParagraph;
+        this.emitChange('update', subtitle);
+    }
+
+    SubtitleList.prototype.getSubtitleParagraph = function(subtitle) {
+	return this.parser.startOfParagraph(subtitle.node);
     }
 
     SubtitleList.prototype.insertSubtitleBefore = function(otherSubtitle) {
@@ -466,6 +490,11 @@ var angular = angular || null;
             }
         }
         return left;
+    }
+
+    SubtitleList.prototype.firstSubtitle = function() {
+        return this.subtitles[this.indexOfFirstSubtitleAfter(-1)] ||
+               this.firstUnsyncedSubtitle();
     }
 
     SubtitleList.prototype.subtitleAt = function(time) {

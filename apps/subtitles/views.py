@@ -15,7 +15,10 @@
 #
 # You should have received a copy of the GNU Affero General Public License along
 # with this program.  If not, see http://www.gnu.org/licenses/agpl-3.0.html.
+
 import simplejson as json
+
+import babelsubs
 from django.contrib.auth.decorators import login_required
 
 from videos.models import Video
@@ -302,4 +305,37 @@ def subtitle_editor(request, video_id, language_code):
         'task': task,
         'editor_data': json.dumps(editor_data, indent=4)
     }, context_instance=RequestContext(request))
+
+def download(request, video_id, language_code, filename, format,
+             version_number=None):
+
+    video = get_object_or_404(Video, video_id=video_id)
+
+    language = video.subtitle_language(language_code)
+    if language is None:
+        raise Http404
+
+    team_video = video.get_team_video()
+
+    if team_video and not team_video.team.user_is_member(request.user):
+        # Non-members can only see public versions
+        version = language.version(public_only=True,
+                                   version_number=version_number)
+    else:
+        version = language.version(public_only=False,
+                                   version_number=version_number)
+
+    if not version:
+        raise Http404
+    if not format in babelsubs.get_available_formats():
+        raise HttpResponseServerError("Format not found")
+
+    subs_text = babelsubs.to(version.get_subtitles(), format,
+                             language=version.language_code)
+    # since this is a downlaod, we can afford not to escape tags, specially
+    # true since speaker change is denoted by '>>' and that would get entirely
+    # stripped out
+    response = HttpResponse(subs_text, mimetype="text/plain")
+    response['Content-Disposition'] = 'attachment'
+    return response
 

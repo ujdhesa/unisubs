@@ -44,32 +44,32 @@
         </div>
     </div>
 {% endif %}
-<ul class="metrics{% if not team.workflow_enabled and not projects|length > 0 %} simple{% endif %}">
+<ul class="metrics">
     <li>
         <a href="{% url teams:detail team.slug %}">
-            <p>{{ team.videos_count|simplify_number }}</p>
-            <h4>{% trans "Video" %}{{ team.videos_count|pluralize }}</h4>
+            <span class="count">{{ team.videos_count|simplify_number }}</span>
+            {% trans "Video" %}{{ team.videos_count|pluralize }}
         </a>
     </li>
-    <li{% if not team.workflow_enabled and not projects|length > 0 %} class="last"{% endif %}>
+    <li>
         <a href="{% url teams:detail_members team.slug %}">
-            <p>{{team.member_count|simplify_number}}</p>
-            <h4>{% trans "Member" %}{{ team.member_count|pluralize }}</h4>
+            <span class="count">{{team.member_count|simplify_number}}</span>
+            {% trans "Member" %}{{ team.member_count|pluralize }}
         </a>
     </li>
     {% if team.workflow_enabled %}
         <li>
             <a href="{% url teams:team_tasks team.slug %}?assignee=none">
-                <p>{% if team.tasks_count > 1000 %}{% trans "> 1000" %}{% else %}{{ team.tasks_count }} {% endif %}</p>
-                <h4>{% trans "Task" %}{{ team.tasks_count|pluralize }}</h4>
+                <span class="count">{% if team.tasks_count > 1000 %}{% trans "> 1000" %}{% else %}{{ team.tasks_count }} {% endif %}</span>
+                {% trans "Task" %}{{ team.tasks_count|pluralize }}
             </a>
         </li>
     {% endif %}
     {% if projects|length > 0 %}
-        <li{% if team.workflow_enabled %} class="last"{% endif %}>
+        <li>
             <a href="{% url teams:detail team.slug %}">
-                <p>{{ projects|length|simplify_number }}</p>
-                <h4>{% trans "Project" %}{{ projects|length|pluralize }}</h4>
+                <span class="count">{{ projects|length|simplify_number }}</span>
+                {% trans "Project" %}{{ projects|length|pluralize }}
             </a>
         </li>
     {% endif %}

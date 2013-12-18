@@ -341,7 +341,7 @@ class VideosApiClass(object):
 
         video.followers.add(user)
 
-        for l in video.subtitlelanguage_set.all():
+        for l in video.newsubtitlelanguage_set.all():
             l.followers.add(user)
 
         return Msg(_(u'You are following this video now.'))
@@ -357,7 +357,7 @@ class VideosApiClass(object):
 
         video.followers.remove(user)
 
-        for l in video.subtitlelanguage_set.all():
+        for l in video.newsubtitlelanguage_set.all():
             l.followers.remove(user)
 
         return Msg(_(u'You stopped following this video now.'))
