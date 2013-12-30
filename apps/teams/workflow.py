@@ -39,6 +39,7 @@ from functools import partial
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.core.urlresolvers import reverse
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -50,6 +51,7 @@ from teams import tasks
 from teams.permissions_const import (
     ROLE_OWNER, ROLE_ADMIN, ROLE_MANAGER, ROLE_CONTRIBUTOR
 )
+from subtitles import shims
 from subtitles.models import SubtitleVersion, SubtitleLanguage
 from videos.models import SubtitleVersion as OldSubtitleVersion
 from videos.models import VideoUrl
