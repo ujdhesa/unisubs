@@ -187,6 +187,7 @@ class Rpc(BaseRpc):
             'subtitles': None,
             'video_urls': video_urls,
             'is_moderated': video_cache.get_is_moderated(video_id),
+            'filename': video_cache.get_download_filename(video_id),
         }
 
         if additional_video_urls is not None:

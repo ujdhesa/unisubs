@@ -100,7 +100,7 @@ def render_subtitles(subtitle_version):
 @register.simple_tag
 def subtitle_download_url(version, format_name):
     filename = '.'.join([
-        version.title_display().replace('.', '_'),
+        version.video.get_download_filename(),
         version.language_code
     ])
     return reverse('subtitles:download', kwargs={

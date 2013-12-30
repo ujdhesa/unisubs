@@ -22,10 +22,11 @@ goog.provide('unisubs.widget.DropDown');
  * @constructor
  * @param {unisubs.widget.DropDownContents} dropDownContents
  */
-unisubs.widget.DropDown = function(videoID, dropDownContents, videoTab) {
+unisubs.widget.DropDown = function(videoID, videoFilename, dropDownContents, videoTab) {
     goog.ui.Component.call(this);
 
     this.videoID_ = videoID;
+    this.videoFilename_ = videoFilename;
     this.setStats_(dropDownContents);
     this.videoTab_ = videoTab;
     /**
@@ -176,8 +177,7 @@ unisubs.widget.DropDown.prototype.createDownloadSRTURL_ = function() {
     if(this.subtitleState_ === null) {
         return '#';
     }
-    var filename = (this.subtitleState_.TITLE.replace('.', '_') + '.' +
-            this.subtitleState_.LANGUAGE);
+    var filename = this.videoFilename_ + '.' + this.subtitleState_.LANGUAGE;
     var path = ("/subtitles/" + this.videoID_ + "/" +
             this.subtitleState_.LANGUAGE + "/download/" +
             encodeURIComponent(filename) + '.srt');

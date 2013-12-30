@@ -25,10 +25,27 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase
 
 from subtitles.templatetags import new_subtitles_tags
+from videos.models import Video
 from videos.tests.data import (
     get_video, make_subtitle_language, make_subtitle_version
 )
 
+class DownloadFilenameTest(TestCase):
+    def check_get_download_filename(self, title, correct_filename):
+        v = Video()
+        v.title = title
+        self.assertEquals(v.get_download_filename(), correct_filename)
+
+    def test_newline(self):
+        self.check_get_download_filename(u"my\ntitle", u'my title')
+
+    def test_period(self):
+        self.check_get_download_filename(u"my.title", u'my_title')
+
+    def test_long_title(self):
+        title = (u"This is a really long title used to "
+                 u"make sure we are not truncating file names")
+        self.check_get_download_filename(title, title)
 
 class DFXPTest(TestCase):
     def _download_subs(self, subtitle_language, format):
@@ -50,11 +67,8 @@ class DFXPTest(TestCase):
         sl_en = make_subtitle_language(video, 'en')
         video.primary_audio_language_code = 'en'
         video.save()
-        self.test_title = "This is a really long title used to make sure we are not truncating file names"
-        self.assertTrue(len(self.test_title) > 60)
         make_subtitle_version(sl_en, [(100, 200, 'Here we go!')],
-                              title=self.test_title,
-        )
+                              title='title')
 
         content = self._download_subs(sl_en, 'dfxp')
         serialized = DFXPParser(content)

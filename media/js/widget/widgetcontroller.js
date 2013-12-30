@@ -72,7 +72,7 @@ unisubs.widget.WidgetController.prototype.initializeStateImpl_ = function(result
         result['subtitles']);
 
     var popupMenu = new unisubs.widget.DropDown(
-        videoID, dropDownContents, this.videoTab_);
+        videoID, result['filename'], dropDownContents, this.videoTab_);
 
     popupMenu.setForStreamer(this.forStreamer_);
 

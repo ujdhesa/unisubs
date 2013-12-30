@@ -326,6 +326,13 @@ class Video(models.Model):
         else:
             return url
 
+    def get_download_filename(self):
+        """Get the filename to download this video as
+
+        This is basically the video title, with some chars replaced.
+        """
+        return self.title_display().replace('.', '_').replace('\n', ' ')
+
     def update_view_counter(self):
         """Queue a Celery task that will increment the number of views for this video."""
         hitcounts.video_hits.add_hit(self)

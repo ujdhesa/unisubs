@@ -3,7 +3,7 @@
 import sys
 
 from dockerdev.rundocker import run_manage
+from dockerdev.containers import initialize_mysql_container
 
 run_manage(['drop_all_tables'])
-run_manage(['syncdb', '--all'])
-run_manage(['migrate', '--fake'])
+initialize_mysql_container()

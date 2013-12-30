@@ -50,10 +50,10 @@ def get_all_images():
     output = get_docker_output("ps -a -q")
     return [line.strip() for line in output.split("\n")]
 
-def initailize_mysql_container():
-    print '* initializing your database'
+def initialize_mysql_container():
     run_manage(['syncdb', '--all', '--noinput'])
     run_manage(['migrate', '--fake'])
+    run_manage(['setup_current_site', 'unisubs.example.com:8000'])
 
 def run_image(image_name):
     cmd_line = [
@@ -69,7 +69,8 @@ def run_image(image_name):
     if image_name == 'amara-dev-mysql':
         # give mysql a bit of time to startup
         time.sleep(1)
-        initailize_mysql_container()
+        print '* initializing your database'
+        initialize_mysql_container()
 
 def start_container(image_name):
     run_docker("start %s" % (get_cid(image_name)))

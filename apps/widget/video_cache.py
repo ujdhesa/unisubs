@@ -92,6 +92,7 @@ def invalidate_cache(video_id):
     cache.delete(_video_languages_verbose_key(video_id))
     cache.delete(_video_is_moderated_key(video_id))
     cache.delete(_video_visibility_policy_key(video_id))
+    cache.delete(_video_filename_key(video_id))
 
     from videos.models import Video
     try:
@@ -152,6 +153,9 @@ def _subtitle_language_pk_key(video_id, language_code):
 
 def _video_is_moderated_key(video_id):
     return 'widget_video_is_moderated_{0}'.format(video_id)
+
+def _video_filename_key(video_id):
+    return 'widget_video_filename_{0}'.format(video_id)
 
 def _video_visibility_policy_key(video_id):
     return 'widget_video_vis_key_{0}'.format(video_id)
@@ -294,6 +298,18 @@ def get_is_moderated(video_id):
         from videos.models import Video
         video = Video.objects.get(video_id=video_id)
         value = video.is_moderated
+        cache.set(cache_key, value, TIMEOUT)
+
+    return value
+
+def get_download_filename(video_id):
+    cache_key = _video_filename_key(video_id)
+    value = cache.get(cache_key)
+
+    if value is None:
+        from videos.models import Video
+        video = Video.objects.get(video_id=video_id)
+        value = video.get_download_filename()
         cache.set(cache_key, value, TIMEOUT)
 
     return value
