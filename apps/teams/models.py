@@ -822,6 +822,11 @@ class TeamVideo(models.Model):
             self.created = datetime.datetime.now()
         super(TeamVideo, self).save(*args, **kwargs)
 
+    def on_subtitle_task_complete(self):
+        """Called when the subtitle task is complete for this video."""
+        if (self.team.tasks_enabled() and
+            self.team.workflow.autocreate_translate):
+            _create_translation_tasks(self)
 
     def is_checked_out(self, ignore_user=None):
         '''Return whether this video is checked out in a task.
@@ -937,12 +942,8 @@ class TeamVideoMigration(models.Model):
         # Make now a function so we can patch it in the unittests
         return datetime.datetime.now()
 
-def _create_translation_tasks(team_video, subtitle_version=None):
+def _create_translation_tasks(team_video):
     """Create any translation tasks that should be autocreated for this video.
-
-    subtitle_version should be the original SubtitleVersion that these tasks
-    will probably be translating from.
-
     """
     preferred_langs = TeamLanguagePreference.objects.get_preferred(team_video.team)
 

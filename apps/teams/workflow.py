@@ -596,11 +596,7 @@ class Task(models.Model):
             # We need to make sure this is updated correctly here.
             from apps.videos import metadata_manager
             metadata_manager.update_metadata(self.team_video.video.pk)
-
-            if self.workflow.autocreate_translate:
-                # TODO: Switch to autocreate_task?
-                _create_translation_tasks(self.team_video, sv)
-
+            self.team_video.on_subtitle_task_complete()
             upload_subtitles_to_original_service.delay(sv.pk)
             task = None
         return task
@@ -674,11 +670,7 @@ class Task(models.Model):
                 # Make these subtitles public!
                 self.new_subtitle_version.publish()
 
-                # If the subtitles are okay, go ahead and autocreate translation
-                # tasks if necessary.
-                if self.workflow.autocreate_translate:
-                    _create_translation_tasks(self.team_video, sv)
-
+                self.team_video.on_subtitle_task_complete()
                 # Notify the appropriate users and external services.
                 notifier.reviewed_and_published.delay(self.pk)
                 upload_subtitles_to_original_service.delay(sv.pk)
@@ -701,14 +693,10 @@ class Task(models.Model):
         self._add_comment()
 
         if approval:
-            # The subtitles are acceptable, so make them public!
+            # The subtitles are acceptable, so make them public and send them
+            # back to the original service.
             self.new_subtitle_version.publish()
-
-            # Create translation tasks if necessary.
-            if self.workflow.autocreate_translate:
-                _create_translation_tasks(self.team_video, sv)
-
-            # And send them back to the original service.
+            self.team_video.on_subtitle_task_complete()
             upload_subtitles_to_original_service.delay(sv.pk)
             task = None
         else:
