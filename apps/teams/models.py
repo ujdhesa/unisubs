@@ -52,6 +52,7 @@ from utils import DEFAULT_PROTOCOL
 from utils.amazon import S3EnabledImageField, S3EnabledFileField
 from utils.panslugify import pan_slugify
 from utils.searching import get_terms
+from utils.translation import language_choices_lazy
 from videos.models import Video, SubtitleVersion, SubtitleLanguage
 from subtitles.models import (
     SubtitleVersion as NewSubtitleVersion,
@@ -2437,7 +2438,8 @@ class Collaboration(models.Model):
 
     # video/language being worked on
     team_video = models.ForeignKey(TeamVideo)
-    language_code = models.CharField(max_length=16, choices=ALL_LANGUAGES)
+    language_code = models.CharField(max_length=16,
+                                     choices=language_choices_lazy)
     state = models.CharField(max_length=1, choices=STATE_CHOICES,
                              default=NEEDS_SUBTITLER)
     last_joined = models.DateTimeField(null=True, blank=True, default=None,

@@ -114,6 +114,8 @@ class CollaboratorInline(admin.TabularInline):
 
 class CollaborationAdmin(admin.ModelAdmin):
     list_display = ('team_video', 'language_code', 'state', 'project', 'team')
+    list_filter = ('language_code',)
+    search_fields = ('team_video__video__title',)
     ordering = ('-id',)
 
     inlines = [
