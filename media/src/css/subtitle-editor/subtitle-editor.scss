@@ -1276,6 +1276,29 @@ section.collab {
         border-left: 1px solid #DADBDC;
         z-index: 52;
 
+        h3 {
+            padding: 0.5em 0;
+            font-size: 16px;
+            color: #000;
+            background: #DADBDC;
+            text-align: center;
+        }
+
+        h4 {
+            font-size: 14px;
+            color: #ddd;
+            padding: 0.25em 0;
+        }
+
+        ul.collaborators {
+            color: #ddd;
+            margin-bottom: 1em;
+
+            li {
+                margin-left: 10px;
+            }
+        }
+
         a.toggle-pane {
             background: #333333 url('../../../images/arrow-right.png') center center no-repeat;
             left: -24px;

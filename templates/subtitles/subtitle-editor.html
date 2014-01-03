@@ -379,6 +379,17 @@ what is supported, check out tests/subtitleRepeatDirective.spec.
                     Close Collab
                 </a>
                 -->
+                <h3>{% trans 'Collaboration' %}</h3>
+                <div class="collaborator-list module">
+                    <div class="content">
+                        <h4>{% trans 'Collaborators' %}</h4>
+                        <ul class="collaborators">
+                            <li ng-repeat="collaborator in collaborators">
+                              [[ collaborator ]]
+                            </li>
+                        </ul>
+                    </div>
+                </div>
                 <div class="notes module"
                      ng-show="modulesEnabled.notes"
                      ng-class="{open: modulesOpen.notes}">
