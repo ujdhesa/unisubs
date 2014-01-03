@@ -2647,6 +2647,23 @@ class Collaboration(models.Model):
             if new_state == Collaboration.COMPLETE:
                 self.collaborators.update(complete=True)
 
+    def add_note(self, member, text):
+        """Add a new note to this collaboration
+
+        :returns: the added note
+        """
+
+        if member.team_id != self.team_id:
+            raise ValueError(
+                "%s is not a member for this collaboration's team" %
+                (member,))
+        # Note we don't check that user is a member of the collaboration.
+        # Maybe we should, but it seems usefull to potentially allow other
+        # users to add notes too.
+        return CollaborationNote.objects.create(collaboration=self,
+                                                user=member.user,
+                                                text=text)
+
 class Collaborator(models.Model):
     """User who is part of a collaboration."""
 
@@ -2696,6 +2713,27 @@ class Collaborator(models.Model):
             return url
         else:
             return "%s?collaboration_id=%s" % (url, self.collaboration_id)
+
+class CollaborationNote(models.Model):
+    """Note added to a collaboration."""
+
+    collaboration = models.ForeignKey(Collaboration, related_name='notes')
+    user = models.ForeignKey(User)
+    datetime = models.DateTimeField()
+    text = models.TextField()
+
+    def __init__(self, *args, **kwargs):
+        if 'datetime' not in kwargs:
+            kwargs['datetime'] = self.now()
+        models.Model.__init__(self, *args, **kwargs)
+
+    @staticmethod
+    def now():
+        # Make now a function so we can patch it in the unittests
+        return datetime.datetime.now()
+
+    def datetime_display(self):
+        return self.datetime.strftime('%a %b %d %Y %I:%M%P')
 
 class CollaborationHistory(models.Model):
     """Tracks changes to a collaboration."""

@@ -100,6 +100,7 @@ class TeamMemberFactory(factory.DjangoModelFactory):
 
     role = TeamMember.ROLE_OWNER
     user = factory.SubFactory(UserFactory)
+    team = factory.SubFactory(TeamFactory)
 
 class TeamVideoFactory(factory.DjangoModelFactory):
     FACTORY_FOR = TeamVideo

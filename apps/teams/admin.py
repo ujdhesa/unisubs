@@ -25,10 +25,10 @@ from django.utils.translation import ugettext_lazy as _
 from messages.forms import TeamAdminPageMessageForm
 from teams.models import (
     Team, TeamMember, TeamVideo, TaskWorkflow, Collaboration,
-    Collaborator, CollaborationWorkflow, CollaborationLanguage, Task, Setting,
-    MembershipNarrowing, Project, TeamLanguagePreference,
-    TeamNotificationSetting, BillingReport, Partner, Application,
-    ApplicationInvalidException, Invite, BillingRecord
+    Collaborator, CollaborationNote, CollaborationWorkflow,
+    CollaborationLanguage, Task, Setting, MembershipNarrowing, Project,
+    TeamLanguagePreference, TeamNotificationSetting, BillingReport, Partner,
+    Application, ApplicationInvalidException, Invite, BillingRecord
 )
 from videos.models import SubtitleLanguage
 
@@ -112,6 +112,10 @@ class CollaboratorInline(admin.TabularInline):
     model = Collaborator
     extra = 1
 
+class CollaborationNoteInline(admin.TabularInline):
+    model = CollaborationNote
+    extra = 1
+
 class CollaborationAdmin(admin.ModelAdmin):
     list_display = ('team_video', 'language_code', 'state', 'project', 'team')
     list_filter = ('language_code',)
@@ -120,6 +124,7 @@ class CollaborationAdmin(admin.ModelAdmin):
 
     inlines = [
         CollaboratorInline,
+        CollaborationNoteInline,
     ]
 
 class CollaborationWorkflowAdmin(admin.ModelAdmin):

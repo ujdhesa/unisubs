@@ -17,6 +17,7 @@
 # http://www.gnu.org/licenses/agpl-3.0.html.
 
 from __future__ import absolute_import
+from datetime import datetime
 
 from django.core.exceptions import PermissionDenied
 from django.test import TestCase
@@ -505,3 +506,32 @@ class CollaborationManagerDashboardTestCase(CollaborationTestCase):
         self.dashboard_viewer.user.userlanguage_set.all().delete()
         can_join = self.make_collaboration(language_code='en')
         self.check_can_join([can_join])
+
+class CollaborationNoteTest(CollaborationTestCase):
+    @patch_for_test('teams.models.CollaborationNote.now')
+    def test_add_notes(self, mock_now):
+        collaboration = self.make_collaboration()
+        collaboration.join(self.member1)
+        self.assertEquals(collaboration.notes.count(), 0)
+        notes_to_add = [
+            (self.member1, 'note1', datetime(2012, 1, 1)),
+            (self.member2, 'note2', datetime(2012, 2, 1)),
+            (self.member3, 'note2', datetime(2012, 2, 1, 10, 30)),
+        ]
+        for member, text, note_date in notes_to_add:
+            mock_now.return_value = note_date
+            collaboration.add_note(member, text)
+
+        correct_note_data = [
+            (member.user, text, note_date)
+            for member, text, note_date in notes_to_add
+        ]
+        self.assertEquals(
+            [(c.user, c.text, c.datetime) for c in collaboration.notes.all()],
+            correct_note_data)
+
+    def test_member_must_be_part_of_team(self):
+        collaboration = self.make_collaboration()
+        other_member = TeamMemberFactory.create()
+        self.assertRaises(ValueError, collaboration.add_note,
+                          other_member, 'note text')
