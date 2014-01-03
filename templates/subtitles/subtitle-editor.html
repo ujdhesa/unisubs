@@ -363,51 +363,42 @@ what is supported, check out tests/subtitleRepeatDirective.spec.
                 </div>
             </div>
         </section>
-        <section class="collab column" ng-controller="CollabController">
-            <a class="toggle-pane"
-               ng-click="toggleDocking('pane')"
-               ng-show="modulesEnabled.pane && !modulesOpen.pane">
-                Open Collab
-            </a>
-            <aside ng-show="modulesEnabled.pane && modulesOpen.pane">
-            <!--
-            2534: always keep the collab panel open when we use it.
-            We should uncomment this when the collab code gets integrated
-                <a class="toggle-pane"
-                   ng-click="toggleDocking('pane')"
-                   ng-show="modulesOpen.pane">
-                    Close Collab
-                </a>
-                -->
-                <h3>{% trans 'Collaboration' %}</h3>
-                <div class="collaborator-list module">
-                    <div class="content">
+        <section class="collab column" ng-controller="CollabController" ng-show="collab.enabled">
+            <aside>
+                <h3 ng-show="!collab.taskMode">{% trans 'Collaboration' %}</h3>
+                <div class="content">
+                    <div class="collaborator-list" ng-show="collab.collaborators">
                         <h4>{% trans 'Collaborators' %}</h4>
-                        <ul class="collaborators">
-                            <li ng-repeat="collaborator in collaborators">
+                        <ul class="collab.collaborators">
+                            <li ng-repeat="collaborator in collab.collaborators">
                               [[ collaborator ]]
                             </li>
                         </ul>
                     </div>
-                </div>
-                <div class="notes module"
-                     ng-show="modulesEnabled.notes"
-                     ng-class="{open: modulesOpen.notes}">
-                    <a class="title" ng-click="toggleDocking('notes')">Notes</a>
-                    <div class="content" ng-show="modulesOpen.notes">
-                        <textarea ng-model="notes" ng-change="notesChanged()"></textarea>
+                    <div class="notes group">
+                        <h4>Notes</h4>
+                        <ul>
+                            <li>
+                                <span class="date-and-user">Ben - Tues, 4/13/2015 5pm</span>
+                                Note #1
+                            </li>
+                            <li>
+                            <span class="date-and-user">Ben - 4/13/2015 5pm</span>
+                                Note #2
+                            </li>
+                        </ul>
+                        <textarea ng-model="collab.currentNote" ng-change="notesChanged()"></textarea>
+                        <button ng-show="!collab.taskMode" class="add-note" ng-click="addNote()">Add Note</button>
                     </div>
-                </div>
-                <div class="approval module" ng-show="modulesEnabled.approval">
-                    <div class="content">
-                        <button class="send-back" ng-click="sendBack()">Send Back</button>
-                        <button class="approve" ng-click="approve()">Accept</button>
-                    </div>
-                </div>
-                <div class="endorse module" ng-show="modulesEnabled.endorse">
-                    <div class="content">
-                        <button class="endorse" ng-disabled="endorseDisabled()" ng-click="endorse()">Endorse</button>
-                    </div>
+                    <ng-switch on="collab.taskMode">
+                        <div class="buttons" ng-switch-when="true">
+                                <button class="send-back" ng-click="sendBack()">Send Back</button>
+                                <button class="approve" ng-click="approve()">Accept</button>
+                        </div>
+                        <div class="buttons" ng-switch-when="false">
+                            <button class="endorse" ng-disabled="endorseDisabled()" ng-click="endorse()">Endorse</button>
+                        </div>
+                    </ng-switch>
                 </div>
             </aside>
             <div class="errors">

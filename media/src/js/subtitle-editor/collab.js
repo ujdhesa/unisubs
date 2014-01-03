@@ -22,44 +22,22 @@
 
     module.controller('CollabController', function($scope, $timeout, EditorData) {
 
-        $scope.notes = EditorData.savedNotes || "";
-        $scope.collaborators = EditorData.collaborators || [];
-        // Some modules can be opened and closed. These are the default states.
-        $scope.modulesOpen = {
-            notes: false,
-            pane: false
-        };
-
-        // These states define whether the modules are enabled at all.
-        $scope.modulesEnabled = {
-            approval: false,
-            notes: false,
-            pane: false
+        // Store the state of the current collaboration/task
+        $scope.collab = {
+            enabled: false,
+            taskMode: false,
+            currentNote: EditorData.savedNotes || "",
+            collaborators: EditorData.collaborators || []
         };
 
         // If this is a task, set up the proper panels.
         if (EditorData.task_needs_pane) {
-            $scope.modulesOpen = {
-                notes: true,
-                pane: true
-            };
-
-            $scope.modulesEnabled = {
-                approval: true,
-                notes: true,
-                pane: true
-            };
+            $scope.collab.enabled = true;
+            $scope.collab.taskMode = true;
         }
         else if (EditorData.collaboration_id &&
                 EditorData.collaboration_state != 'being-subtitled') {
-            $scope.modulesOpen = {
-                pane: true
-            };
-
-            $scope.modulesEnabled = {
-                endorse: true,
-                pane: true
-            };
+            $scope.collab.enabled = true;
         }
 
         $scope.endorseDisabled = function() {
@@ -71,9 +49,6 @@
         };
         $scope.endorse = function() {
             $scope.$root.$emit('endorse-collaboration');
-        };
-        $scope.toggleDocking = function(module) {
-            $scope.modulesOpen[module] = !$scope.modulesOpen[module];
         };
         $scope.sendBack = function() {
             $scope.$root.$emit('send-back-task');
