@@ -626,6 +626,7 @@ MEDIA_BUNDLES = {
             "css/watch.css",
             "css/v1.css",
             "css/bootstrap.css",
+            "css/all.css",
           ),
         },
     "video_history":{
@@ -752,6 +753,8 @@ MEDIA_BUNDLES = {
               "js/jquery.metadata.js",
               "js/jquery.mod.js",
               "js/jquery.rpc.js",
+              "js/jquery.main.js",
+              "js/jquery-1.10.2.min.js",
               "js/jquery.input_replacement.min.js",
               "js/messages.js",
               "js/escape.js",
@@ -759,6 +762,8 @@ MEDIA_BUNDLES = {
               "js/libs/chosen.ajax.jquery.js",
               "js/libs/jquery.cookie.js",
               "js/unisubs.site.js",
+              "js/modernizr-1.7.min.js",
+
             ],
         },
     "js-jqueryui-datepicker":{
