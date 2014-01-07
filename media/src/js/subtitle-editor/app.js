@@ -51,7 +51,7 @@ var angular = angular || null;
     module.constant('DEFAULT_DURATION', 4000); // 4 seconds
 
     module.controller("AppController", function($scope, $controller,
-            EditorData, Workflow) {
+                CollaborationManager, EditorData, Workflow) {
 
         $controller('AppControllerSubtitles', {$scope: $scope});
         $controller('AppControllerLocking', {$scope: $scope});
@@ -62,6 +62,7 @@ var angular = angular || null;
         $scope.canAddAndRemove = EditorData.canAddAndRemove;
         $scope.scrollingSynced = true;
         $scope.workflow = new Workflow($scope.workingSubtitles.subtitleList);
+        $scope.collab = new CollaborationManager();
         $scope.timelineShown = !($scope.workflow.stage == 'type');
         $scope.toggleScrollingSynced = function() {
             $scope.scrollingSynced = !$scope.scrollingSynced;
@@ -362,5 +363,4 @@ var angular = angular || null;
         $scope.$watch('workingSubtitles.metadata', watchSubtitleAttributes,
                 true);
     });
-
 }).call(this);

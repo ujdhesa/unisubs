@@ -20,7 +20,6 @@ var angular = angular || null;
 
 (function() {
 
-    var API_BASE_PATH_TEAMS = '/api2/partners/teams/';
     var API_BASE_PATH_VIDEOS = '/api2/partners/videos/';
 
     var module = angular.module('amara.SubtitleEditor.subtitles.services', []);
@@ -39,16 +38,8 @@ var angular = angular || null;
         return (API_BASE_PATH_VIDEOS + videoId + '/languages/' + 
             languageCode + '/subtitles/');
     };
-    var getTaskSaveAPIUrl = function(teamSlug, taskID) {
-        return API_BASE_PATH_TEAMS + teamSlug + '/tasks/' + taskID + '/';
-    };
     var getVideoLangAPIUrl = function(videoId) {
         return API_BASE_PATH_VIDEOS + videoId + '/languages/';
-    };
-
-    var getEndorseAPIUrl = function(videoId, languageCode) {
-        return API_BASE_PATH_VIDEOS + videoId +
-            '/languages/' + languageCode + '/endorsements/';
     };
 
     /*
@@ -84,7 +75,26 @@ var angular = angular || null;
         }
     }
 
-    module.factory('SubtitleStorage', function($http, EditorData) {
+    module.factory('AuthHeaders', function(EditorData) {
+        return {
+            headers: function() {
+                var rv = {};
+                // The following code converts the values of
+                // EditorData.authHeaders into utf-8 encoded bytestrings to send
+                // back to the server.  The unescape/encodeURIComponent part seems
+                // pretty hacky, but it should work for all browsers
+                // (http://monsur.hossa.in/2012/07/20/utf-8-in-javascript.html)
+                for (var key in EditorData.authHeaders) {
+                    var val = EditorData.authHeaders[key];
+                    var utfVal = unescape(encodeURIComponent(val));
+                    rv[key] = utfVal;
+                }
+                return rv;
+            }
+        };
+    });
+
+    module.factory('SubtitleStorage', function($http, AuthHeaders, EditorData) {
 
         // Map language codes to Language objects
         var languageMap = {};
@@ -108,75 +118,7 @@ var angular = angular || null;
             });
         });
 
-        function authHeaders() {
-            var rv = {};
-            // The following code converts the values of
-            // EditorData.authHeaders into utf-8 encoded bytestrings to send
-            // back to the server.  The unescape/encodeURIComponent part seems
-            // pretty hacky, but it should work for all browsers
-            // (http://monsur.hossa.in/2012/07/20/utf-8-in-javascript.html)
-            for (var key in EditorData.authHeaders) {
-                var val = EditorData.authHeaders[key];
-                var utfVal = unescape(encodeURIComponent(val));
-                rv[key] = utfVal;
-            }
-            return rv;
-        }
-
-
         return {
-            approveTask: function(versionNumber, notes) {
-
-                var url = getTaskSaveAPIUrl(EditorData.team_slug,
-                        EditorData.task_id);
-
-                var promise = $http({
-                    method: 'PUT',
-                    url: url,
-                    headers: authHeaders(),
-                    data:  {
-                        complete: true,
-                        body: notes,
-                        version_number: versionNumber,
-                    }
-                });
-
-                return promise;
-
-            },
-            updateTaskNotes: function(notes) {
-
-                var url = getTaskSaveAPIUrl(EditorData.team_slug,
-                        EditorData.task_id);
-
-                var promise = $http({
-                    method: 'PUT',
-                    url: url,
-                    headers: authHeaders(),
-                    data:  {
-                        body: notes,
-                    }
-                });
-
-                return promise;
-            },
-            endorseCollaboration: function(videoId, languageCode) {
-
-                var url = getEndorseAPIUrl(videoId, languageCode);
-                // To endorse the collaboration we post to the endorsements
-                // URL.  We don't need to send any data, the only thing that's
-                // important is the user endorsing it and that's already
-                // specified by the auth headers.
-                var promise = $http({
-                    method: 'POST',
-                    url: url,
-                    headers: authHeaders(),
-                    data:  {},
-                });
-
-                return promise;
-
-            },
             getLanguages: function(callback) {
                 return _.values(languageMap);
             },
@@ -217,26 +159,6 @@ var angular = angular || null;
             getVideoURLs: function() {
                 return EditorData.video.videoURLs;
             },
-            sendBackTask: function(versionNumber, notes) {
-
-                var url = getTaskSaveAPIUrl(EditorData.team_slug,
-                        EditorData.task_id);
-
-                var promise = $http({
-                    method: 'PUT',
-                    url: url,
-                    headers: authHeaders(),
-                    data:  {
-                        complete: true,
-                        body: notes,
-                        send_back: true,
-                        version_number: versionNumber,
-                    }
-                });
-
-                return promise;
-
-            },
             saveSubtitles: function(videoID, languageCode, dfxpString, title,
                                    description, metadata, isComplete) {
                 var url = getSubtitleSaveAPIUrl(videoID, languageCode);
@@ -249,7 +171,7 @@ var angular = angular || null;
                 var promise = $http({
                     method: 'POST',
                     url: url,
-                    headers: authHeaders(),
+                    headers: AuthHeaders.headers(),
                     data:  {
                         video: videoID,
                         language: languageCode,

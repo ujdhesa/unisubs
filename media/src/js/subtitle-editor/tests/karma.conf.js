@@ -30,7 +30,7 @@ files = [
     'src/js/subtitle-editor/*.js',
     'src/js/subtitle-editor/**/*.js',
     'src/js/subtitle-editor/tests/*Spec.js',
-    'src/js/subtitle-editor/tests/mocks.js',
+    'src/js/subtitle-editor/tests/mock*.js',
 ];
 
 // list of files to exclude

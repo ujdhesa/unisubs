@@ -4,8 +4,6 @@ describe('Test the SubtitleStorage service', function() {
     var languageCode = 'en';
     var subtitleResourceUrl = ('/api2/partners/videos/' + videoId +
         '/languages/' + languageCode + '/subtitles/');
-    var endorsementResourceUrl = ('/api2/partners/videos/' + videoId +
-        '/languages/' + languageCode + '/endorsements/');
     var authHeaders = {
         'x-api-username': 'ben',
         'x-apikey': '123456'
@@ -61,12 +59,6 @@ describe('Test the SubtitleStorage service', function() {
         saveData['is_complete'] = null;
         checkSaveSubtitlesCall();
     });
-
-    it('Can mark subtitles as endorsed', function() {
-        $httpBackend.expectPOST(endorsementResourceUrl, {}, authHeaders).respond(201, '');
-        SubtitleStorage.endorseCollaboration(videoId, languageCode);
-    });
-
 
 });
 

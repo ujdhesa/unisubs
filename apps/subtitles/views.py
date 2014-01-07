@@ -299,6 +299,15 @@ def subtitle_editor(request, video_id, language_code):
             unicode(collaborator.user)
             for collaborator in collaboration.collaborators.all()
         ]
+        editor_data['collaborationNotes'] = [
+            {
+                'user': unicode(note.user),
+                'datetime': note.datetime.isoformat(),
+                'datetime_display': note.datetime_display(),
+                'text': note.text,
+            }
+            for note in collaboration.notes.all()
+        ]
 
     return render_to_response("subtitles/subtitle-editor.html", {
         'video': video,

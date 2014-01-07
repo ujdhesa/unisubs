@@ -140,7 +140,6 @@ var angular = angular || null;
     module.controller('SaveSessionController', function($scope, $q, SubtitleStorage, EditorData) {
 
         $scope.changesMade = false;
-        $scope.notesChanged = false;
         $scope.nextVersionNumber = null;
         $scope.fromOldEditor = Boolean(EditorData.oldEditorURL);
         $scope.primaryVideoURL = '/videos/' + $scope.videoId + '/';
@@ -150,15 +149,11 @@ var angular = angular || null;
         }
 
         $scope.saveDisabled = function() {
-            return !($scope.changesMade || $scope.notesChanged);
+            return !($scope.changesMade || $scope.collab.noteNeedsSave());
         };
 
         $scope.discard = function() {
             $scope.showCloseModal(false);
-        };
-        $scope.getNotes = function() {
-            var collabScope = angular.element($('section.collab').get(0)).scope();
-            return collabScope.notes || '';
         };
         $scope.saveAndApprove = function() {
             if($scope.changesMade) {
@@ -172,8 +167,7 @@ var angular = angular || null;
 
                     $scope.status = 'approving';
 
-                    SubtitleStorage.approveTask(versionNumber, $scope.getNotes()).then(function onSuccess(response) {
-
+                    $scope.collab.approveTask(versionNumber).then(function onSuccess(response) {
                         $scope.$root.$emit('show-loading-modal', message);
                         window.location = $scope.primaryVideoURL;
 
@@ -198,7 +192,7 @@ var angular = angular || null;
 
                     $scope.status = 'endorsing';
 
-                    SubtitleStorage.endorseCollaboration($scope.videoId, EditorData.editingVersion.languageCode).then(function onSuccess(response) {
+                    $scope.collab.endorseCollaboration().then(function onSuccess(response) {
                         $scope.$root.$emit('show-loading-modal', message);
                         window.location = $scope.primaryVideoURL;
                     }, function onError(e) {
@@ -221,7 +215,7 @@ var angular = angular || null;
             }
             options = defaults;
 
-            if(!$scope.changesMade && !$scope.notesChanged && !options.markComplete && !options.force) {
+            if(!$scope.changesMade && !$scope.collab.noteNeedsSave() && !options.markComplete && !options.force) {
                 return;
             }
 
@@ -242,11 +236,9 @@ var angular = angular || null;
 
                     $scope.status = 'sending-back';
 
-                    SubtitleStorage.sendBackTask(versionNumber, $scope.getNotes()).then(function onSuccess(response) {
-
+                    $scope.collab.sendBackTask(versionNumber).then(function onSuccess(response) {
                         $scope.$root.$emit('show-loading-modal', message);
                         window.location = $scope.primaryVideoURL;
-                        
                     }, function onError(e) {
                         $scope.status = 'error';
                         $scope.showErrorModal();
@@ -288,14 +280,13 @@ var angular = angular || null;
                 var promise = deferred.promise;
             }
             // chain on saving the notes on if needed
-            if($scope.notesChanged) {
+            if($scope.collab.noteNeedsSave()) {
                 promise = promise.then(function onSuccess(versionNumber) {
-                    var notes = $scope.getNotes();
-                    var promise2 = SubtitleStorage.updateTaskNotes(notes);
+                    var promise2 = $scope.collab.saveNote();
                     return promise2.then(function onSuccess(result) {
-                        // ignore the result of updateTaskNotes() and just
-                        // return the version number.
-                        $scope.notesChanged = false;
+                        // Ignore the result of saveNote() and return the
+                        // version number instead.  This keeps things
+                        // consistent.
                         return versionNumber;
                     });
                 });
@@ -412,9 +403,6 @@ var angular = angular || null;
         });
         $scope.$root.$on('work-done', function() {
             $scope.changesMade = true;
-        });
-        $scope.$root.$on('notes-changed', function() {
-            $scope.notesChanged = true;
         });
 
         window.onbeforeunload = function() {

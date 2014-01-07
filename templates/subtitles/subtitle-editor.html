@@ -365,7 +365,7 @@ what is supported, check out tests/subtitleRepeatDirective.spec.
         </section>
         <section class="collab column" ng-controller="CollabController" ng-show="collab.enabled">
             <aside>
-                <h3 ng-show="!collab.taskMode">{% trans 'Collaboration' %}</h3>
+                <h3 ng-show="collab.mode != 'tasks'">{% trans 'Collaboration' %}</h3>
                 <div class="content">
                     <div class="collaborator-list" ng-show="collab.collaborators">
                         <h4>{% trans 'Collaborators' %}</h4>
@@ -378,24 +378,20 @@ what is supported, check out tests/subtitleRepeatDirective.spec.
                     <div class="notes group">
                         <h4>Notes</h4>
                         <ul>
-                            <li>
-                                <span class="date-and-user">Ben - Tues, 4/13/2015 5pm</span>
-                                Note #1
-                            </li>
-                            <li>
-                            <span class="date-and-user">Ben - 4/13/2015 5pm</span>
-                                Note #2
+                            <li ng-repeat="note in collab.notes">
+                                <span class="date-and-user">[[ note.user]] [[ note.datetime_display ]]</span>
+                                [[ note.text ]]
                             </li>
                         </ul>
-                        <textarea ng-model="collab.currentNote" ng-change="notesChanged()"></textarea>
-                        <button ng-show="!collab.taskMode" class="add-note" ng-click="addNote()">Add Note</button>
+                        <textarea ng-model="collab.currentNote"></textarea>
+                        <button ng-show="collab.mode != 'tasks'" class="add-note" ng-click="addNote()">Add Note</button>
                     </div>
-                    <ng-switch on="collab.taskMode">
-                        <div class="buttons" ng-switch-when="true">
+                    <ng-switch on="collab.mode">
+                        <div class="buttons" ng-switch-when="tasks">
                                 <button class="send-back" ng-click="sendBack()">Send Back</button>
                                 <button class="approve" ng-click="approve()">Accept</button>
                         </div>
-                        <div class="buttons" ng-switch-when="false">
+                        <div class="buttons" ng-switch-when="collab">
                             <button class="endorse" ng-disabled="endorseDisabled()" ng-click="endorse()">Endorse</button>
                         </div>
                     </ng-switch>
