@@ -12,8 +12,56 @@
 <script src="{% url videos:rpc_api %}" type="text/javascript"></script>  
 {% endblock %}
 
+{% block top-info %}
+<div class="top-info">
+        <div class="info-holder">
+        <div class="center-info">
+            <strong class="subtitles">We <span class="heart">heart</span>subtitles!</strong>
+            <h1>{% trans 'Amara is the largest and most advanced captioning and subtitling platform in the world.' %}</h1>
+            <div class="caption">
+                <div class="caption-block">
+                    <div class="caption-hold">
+                        <strong class="head-caption">{% trans 'Need captions or subtitles?' %}</strong>
+                        <a href="#" class="btn-red">{% trans 'CONTACT US' %}</a>
+                    </div>
+                </div>
+            </div>
+            <div class="info-box">
+                <p>{% trans 'Over 300,000 sets of subtitles created in more than 130 languages.' %}</p>
+                <a class="video" href="#">{% trans 'Recently Featured Videos' %}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
 {% block main_content %}
-    
+<div class="publish">
+					<div class="publish-block">
+						<strong class="publish-list">{% trans 'Trusted by:' %}</strong>
+						<ul class="list-info">
+							<li><img src="{{ STATIC_URL }}images/home/img01.png " alt="image" width="140" height="60" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img03.png" alt="image" width="46" height="60" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img05.png" alt="image" width="94" height="60" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img07.png" alt="image" width="97" height="60" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img09.png" alt="image" width="104" height="60" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img11.png" alt="image" width="52" height="60" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img13.png" alt="image" width="39" height="60" /></li>
+						</ul>
+					</div>
+					<div class="publish-block publish-hold">
+						<strong class="publish-list">{% trans 'Publish with:' %}</strong>
+						<ul class="list-info">
+							<li><img src="{{ STATIC_URL }}images/home/img02.jpg" alt="image" width="88" height="56" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img04.jpg" alt="image" width="122" height="56" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img06.jpg" alt="image" width="111" height="56" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img08.jpg" alt="image" width="101" height="56" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img10.jpg" alt="image" width="36" height="56" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img12.jpg" alt="image" width="95" height="56" /></li>
+							<li><img src="{{ STATIC_URL }}images/home/img14.jpg" alt="image" width="167" height="56" /></li>
+						</ul>
+					</div>
+				</div>
 <nav id="nav">
 					<ul class="menu">
 						<li><a href="#01">{% trans 'Individuals' %}</a></li>
@@ -49,7 +97,7 @@
 						<div class="holder">
 							<img class="img-view" src="{{ STATIC_URL }}images/home/img17.jpg" alt="image" width="237" height="236" />
 							<h2>{% trans 'For Volunteers' %}</h2>
-							<strong class="title">{% trans 'Amara is the largest captioning and subtitling community in the world! Join over 150,000 people that are contributing to make video accessible for everyone.</strong>
+							<strong class="title">{% trans 'Amara is the largest captioning and subtitling community in the world! Join over 150,000 people that are contributing to make video accessible for everyone.' %}</strong>
 							<p>{% trans 'Our groundbreaking collaborative subtitling process makes it possible, but it all depends on you. And don’t worry­­ we’ve made subtitling fun and easy.' %}</p>
 							<p>{% trans 'Dozens of organizations need you now:  ' %}<a href="#">{% trans 'Volunteer Opportunities' %}</a></p>
 							<ul class="list">
@@ -65,8 +113,8 @@
 						<div class="holder">
 							<img class="img-view" src="{{ STATIC_URL }}images/home/img18.jpg" alt="image" width="243" height="276" />
 							<h2>{% trans 'For Companies' %}</h2>
-							<strong class="title">{% trans 'Amara provides captions and subtitles for global companies­­ public web videos, internal corporate videos, staff training videos, and much more.</strong>
-							<p>Use our professional caption and translation services, manage your own internal captioning and translation project, or create a public community.' %}</p>
+							<strong class="title">{% trans 'Amara provides captions and subtitles for global companies­­ public web videos, internal corporate videos, staff training videos, and much more.' %}</strong>
+							<p>{% trans 'Use our professional caption and translation services, manage your own internal captioning and translation project, or create a public community.' %}</p>
 							<div class="text-box">
 								<ul class="list">
 									<li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>

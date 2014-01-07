@@ -2,6 +2,7 @@
 
 {% get_current_language_bidi as LANGUAGE_BIDI %}
 
+
 <!DOCTYPE html>
 <html {% if LANGUAGE_BIDI %}dir="rtl"{% endif %} xmlns:og="http://opengraphprotocol.org/schema/" xmlns:fb="http://www.facebook.com/2008/fbml" xml:lang="en" lang="en" {% block html_attrs %}{% endblock %} class="base">
 
@@ -82,59 +83,13 @@
 					</div>
 				</div>
 			</header>
-            <div class="top-info">
-					<div class="info-holder">
-					<div class="center-info">
-						<strong class="subtitles">We <span class="heart">heart</span>subtitles!</strong>
-						<h1>{% trans 'Amara is the largest and most advanced captioning and subtitling platform in the world.' %}</h1>
-						<div class="caption">
-							<div class="caption-block">
-								<div class="caption-hold">
-									<strong class="head-caption">{% trans 'Need captions or subtitles?' %}</strong>
-									<a href="#" class="btn-red">{% trans 'CONTACT US' %}</a>
-								</div>
-							</div>
-						</div>
-						<div class="info-box">
-							<p>{% trans 'Over 300,000 sets of subtitles created in more than 130 languages.' %}</p>
-							<a class="video" href="#">{% trans 'Recently Featured Videos' %}</a>
-						</div>
-					</div>
-				</div>
-			</div>
 			<!-- header  end
 			    main  start -->
+            {% block top-info %}{% endblock %}
             <div id="main">
-				<div class="publish">
-					<div class="publish-block">
-						<strong class="publish-list">{% trans 'Trusted by:' %}</strong>
-						<ul class="list-info">
-							<li><img src="{{ STATIC_URL }}images/home/img01.png " alt="image" width="140" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img03.png" alt="image" width="46" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img05.png" alt="image" width="94" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img07.png" alt="image" width="97" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img09.png" alt="image" width="104" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img11.png" alt="image" width="52" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img13.png" alt="image" width="39" height="60" /></li>
-						</ul>
-					</div>
-					<div class="publish-block publish-hold">
-						<strong class="publish-list">{% trans 'Publish with:' %}</strong>
-						<ul class="list-info">
-							<li><img src="{{ STATIC_URL }}images/home/img02.jpg" alt="image" width="88" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img04.jpg" alt="image" width="122" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img06.jpg" alt="image" width="111" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img08.jpg" alt="image" width="101" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img10.jpg" alt="image" width="36" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img12.jpg" alt="image" width="95" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img14.jpg" alt="image" width="167" height="56" /></li>
-						</ul>
-					</div>
-				</div>
                 {% block main_content %}{% endblock %}
 			</div>
 			<!-- main  end -->
-
 		</div>
 	</div>
 	<!-- wrapper  end
@@ -156,7 +111,56 @@
 			</ul>
 		</div>
 	</footer>
-	<!-- footer  end -->
+    <!-- footer  end -->
+     {% if user.is_staff or user|can_translate %}
+        <div id="admin_controls">
+            <ul id="site_controls">
+                {% if user.is_staff %}
+                    <li><a target="_blank" href="{% url admin:index %}">{% trans 'Admin' %}</a></li>
+                {% endif %}
+                {% if user.is_superuser %}
+                    <li><a target="_blank" href="http://sentry.pculture.org:9000">{% trans 'Sentry' %}</a></li>
+                {% endif %}
+                {% if user|can_translate %}
+                    <li><a target="_blank" href="{% url rosetta-pick-file %}"><span>{% trans 'Rosetta' %}</span></a></li>
+                {% endif %}
+                {% if user.is_superuser %}
+                    <li><a target="_blank" href="{% url auth:login_trap %}">{% trans 'Impersonate' %}</a></li>
+                {% endif %}
+                {% if user.is_superuser %}
+                    <li><a target="_blank" href="{% url billing %}">{% trans 'Billing' %}</a></li>
+                {% endif %}
+                <li><a href="https://github.com/pculture/unisubs/commit/{{ LAST_COMMIT_GUID }}" title="{{ LAST_COMMIT_GUID }}">Github</a></li>
+            </ul>
+            {% block page_controls %}{% endblock %}
+        </div>
+    {% endif %}
+    {% block bottom_scripts %}{% endblock %}
+
+{% if not DEBUG and not RUN_LOCALLY %}
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+
+        _gaq.push(['_setAccount', '{{ GOOGLE_ANALYTICS_NUMBER }}']);
+
+        _gaq.push(['_setDomainName', '.amara.org']);
+        _gaq.push(['_trackPageview']);
+        {% if not RUN_LOCALLY %}
+            {% block analytics %}{% endblock %}
+            (function() {
+                var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+            })();
+        {% endif %}
+    </script>
+    <script src="//cdn.optimizely.com/js/12019399.js"></script>
+{% else %}
+    <script src="/site_media/js/highlight.min.js"></script>
+    <link rel="stylesheet" href="/site_media/css/github.min.css">
+    <script>hljs.initHighlightingOnLoad();</script>
+{% endif %}
 
 </body>
 </html>
