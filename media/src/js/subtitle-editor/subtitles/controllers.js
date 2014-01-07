@@ -149,7 +149,7 @@ var angular = angular || null;
         }
 
         $scope.saveDisabled = function() {
-            return !($scope.changesMade || $scope.collab.noteNeedsSave());
+            return !($scope.changesMade || $scope.collab.enableSaveButton());
         };
 
         $scope.discard = function() {

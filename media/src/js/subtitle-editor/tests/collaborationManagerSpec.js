@@ -20,6 +20,17 @@ describe('Test the CollaborationManager class', function() {
     }));
 
     function makeCollaborationManager(editorDataToSet) {
+        var keysToClear = [
+            'task_id',
+            'task_needs_pane',
+            'collaboration_id',
+            'collaboration_state',
+            'collaborationNotes',
+            'collaborators'
+        ];
+        _.each(keysToClear, function(key) {
+            EditorData[key] = undefined;
+        });
         _.each(_.keys(editorDataToSet), function(key) {
             EditorData[key] = editorDataToSet[key];
         });
@@ -197,6 +208,19 @@ describe('Test the CollaborationManager class', function() {
         var collab = makeCollaborationManagerCollab();
         collab.endorseCollaboration();
         expect(CollaborationStorage.endorseCollaboration).toHaveBeenCalledWith(videoId, languageCode);
+    });
+
+    it('Should enable the save button when the notes are changed in tasks mode', function() {
+        var collab = makeCollaborationManagerTasks();
+        expect(collab.enableSaveButton()).toEqual(false);
+        collab.currentNote = 'new note';
+        expect(collab.enableSaveButton()).toEqual(true);
+        // In collab mode, we never enable the save button because of the note
+        // state since we have the add note button
+        collab = makeCollaborationManagerCollab();
+        expect(collab.enableSaveButton()).toEqual(false);
+        collab.currentNote = 'new note';
+        expect(collab.enableSaveButton()).toEqual(false);
     });
 });
 

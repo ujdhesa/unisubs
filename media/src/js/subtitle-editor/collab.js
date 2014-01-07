@@ -248,6 +248,10 @@
             return CollaborationStorage.endorseCollaboration(this.videoId, this.languageCode);
         }
 
+        CollaborationManager.prototype.enableSaveButton = function() {
+            return this.mode == 'tasks' && this.noteNeedsSave();
+        }
+
         return CollaborationManager;
     });
 
