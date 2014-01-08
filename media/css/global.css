@@ -306,12 +306,14 @@ div.admin-edit-specific-version select {
 
 /* Old header styles */
 
+/* Removed due to conflict with new Index. Jan, 07, 2014.
 #header {
     height: 45px;
     margin: 10px auto 50px auto;
     position: relative;
     width: 940px;
 }
+*/
 #header .top_bar {
     float: left;
     font-size: 12px;

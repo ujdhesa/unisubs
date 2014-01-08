@@ -2,6 +2,7 @@
 
 {% get_current_language_bidi as LANGUAGE_BIDI %}
 
+
 <!DOCTYPE html>
 <html {% if LANGUAGE_BIDI %}dir="rtl"{% endif %} xmlns:og="http://opengraphprotocol.org/schema/" xmlns:fb="http://www.facebook.com/2008/fbml" xml:lang="en" lang="en" {% block html_attrs %}{% endblock %} class="base">
 
@@ -18,8 +19,7 @@
         <meta property="fb:admins" content="539835590"/>
     {% endblock  %}
 
-    <link rel="shortcut icon" type="image/png" href="{{ STATIC_URL }}images/favicon.png" />
-    <link rel="icon" type="image/png" href="{{ STATIC_URL }}images/favicon.png" />
+    <link rel="shortcut icon" href="{{ STATIC_URL }}images/favicon.ico" />
     {% block css %}{% include_bundle "base" %}{% endblock %}
 
     <!--[if IE]>
@@ -47,83 +47,72 @@
     </script>
 </head>
 
-<body {% block body_attrs %}{% endblock %}>
-    {% csrf_token %}
-    {% announcement %}
-    {% if user.is_authenticated %}
-        {% messages %}
-        {% block email_confirmation_block %}
-            {% email_confirmation_notification %}
-        {% endblock %}
-    {% endif %}
-    {% require_email_dialog %}
-    <div id="main_bar">
-        <div id="bar_wrap" class="clearfix">
-            <h1><a href="/">Amara</a></h1>
-            <div id="bar_right">
-                <div id="bar_search">
-                    <form method="get" action="{{BASE_URL}}{% url search:index %}">
-                        <input type="text" name="q" />
-                    </form>
-                </div>
-                <ul id="bar_menu" class="clearfix">
-                    <li id="nav_submit"><a href="{% url videos:create %}">{% trans 'Subtitle Videos' %}</a></li>
-                    <li><a href="{% url videos:watch_page %}">{% trans 'Watch' %}</a></li>
-                    <li><a href="http://about.amara.org/volunteer/">{% trans "Volunteer" %}</a></li>
-                    <li><a href="http://about.amara.org/enterprise/">{% trans "Pro Services" %}</a></li>
-                    <li><a href="http://support.universalsubtitles.org/solution/categories/13504">{% trans 'Help' %}</a></li>
-                    {% if user.is_authenticated %}
+<body>
+    <!-- wrapper  start -->
+	<div id="wrapper">
+		<div class="w1">
+			<!-- header  start -->
+			<header id="header">
+				<div class="holder">
+					<div class="header-box">
+                        {% if user.is_authenticated %}
                         <li id="me_menu">{% top_user_panel %}</li>
-                    {% else %}
-                        <li><a href="{% url auth:login %}?next={{ request.path_info|urlencode }}">{% trans 'Sign in / Sign up' %}</a></li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div id="lang_bar">
-        {% block select_language_dialog %}
-            {% select_language_dialog %}
-        {% endblock %}
-    </div>
-    <div class="content container_12 wrapper clearfix">
-        {% if request|show_youtube_prompt and not hide_prompt %}
-            <div id="youtube-prompt">
-                <img src="{{ STATIC_URL }}images/partners/youtube.png" alt="YouTube"/>
-                <h2>{% trans "Got a YouTube account?<" %}/h2>
-                <p>{% trans "New: enable viewer-created translations and captions on your YouTube channel!" %}</p>
-                <ul>
-                    <li><a href="{% url profiles:account %}?prompt=true" class="proceed">{% trans "Connect to YouTube" %}</a></li>
-                    <li><a href="#" class="hide">{% trans "No thanks" %}</a></li>
-                </ul>
-            </div>
-        {% endif %}
-        {% if messages %}
-            <div id="messages">
-                {% for message in messages %}
-                    <h2 class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message|safe }}</h2>
-                {% endfor %}
-                <a href="#" id="closeBut" style="display: block; float: right;">x</a>
-            </div>
-        {% endif %}
-        {% block main_content %}{% endblock %}
-    </div>
-    <div class="footer">
-        <div class="floatleft">
-            {% trans 'Amara is a project of <a href="http://participatoryculture.org/">PCF</a>.' %}  
-        </div>
-        <div class="floatright">
-            <a href="/about">{% trans 'About' %}</a>
-            <a href="http://www.pculture.org/pcf/jobs/">{% trans 'Jobs' %}</a>
-            <a href="http://www.facebook.com/Amara.Community/">Facebook</a> 
-            <a href="http://twitter.com/amarasubs">Twitter</a>
-            <a href="http://support.universalsubtitles.org/solution/categories/13504/folders/40766/articles/35517--i-have-a-non-technical-question-about-amara">{% trans 'Contact Us' %}</a>
-            <a href="http://www.pculture.org/pcf/websites-privacy/">{% trans 'Privacy Policy' %}</a>
-            <a href="http://about.amara.org/tos/">{% trans 'Terms of Service' %}</a>
-            <a href="{% url security_page %}">{% trans 'Security' %}</a>
-        </div>
-    </div>
-    {% if user.is_staff or user|can_translate %}
+                        {% else %}
+                        <a href="{% url auth:login %}?next={{ request.path_info|urlencode }}" class="btn-red">{% trans 'SIGN UP/SIGN IN' %}</a>
+                        {% endif %}
+						<div class="box-form">
+							<form action="#" class="form">
+								<fieldset>
+									<div class="text">
+                                        <form method="get" action="{{BASE_URL}}{% url search:index %}">
+                                            <button class="btn-search" type="submit">{% trans 'search' %}</button>
+                                            <input type="text" name="q" class="text-input" value="" placeholder="Search Subtitled Videos"/>
+                                         </form>
+									</div>
+								</fieldset>
+							</form>
+						</div>
+						<ul class="menu-top">
+							<li><a href="{% url videos:create %}">{%trans 'Subtitle a Video' %}</a></li>
+							<li><a href="http://about.amara.org/volunteer/">{% trans 'Volunteer' %}</a></li>
+							<li><a href="#">{% trans 'Browse' %}</a></li>
+							<li><a href="http://about.amara.org/enterprise/">{% trans 'Order Captions' %}</a></li>
+							<li><a href="http://support.universalsubtitles.org/solution/categories/13504">{% trans 'Help' %}</a></li>
+						</ul>
+						<strong class="logo"><a href="#">amara</a></strong>
+					</div>
+				</div>
+			</header>
+			<!-- header  end
+			    main  start -->
+            {% block top-info %}{% endblock %}
+            <div id="main">
+                {% block main_content %}{% endblock %}
+			</div>
+			<!-- main  end -->
+		</div>
+	</div>
+	<!-- wrapper  end
+	     footer  start -->
+	<footer id="footer">
+		<div class="holder">
+			<ul class="social-list">
+				<li><a href="#" class="fasebook">Facebook</a></li>
+				<li><a class="twitter" href="#">Twitter</a></li>
+				<li><a class="shirt" href="#">{% trans 'Buy a T-shirt!' %}</a></li>
+			</ul>
+			<ul class="menu">
+				<li><a href="#">{% trans 'About' %}</a></li>
+				<li><a href="#">{% trans 'Jobs' %}</a></li>
+				<li><a href="#">{% trans 'Contact Us' %}</a></li>
+				<li><a href="#">{% trans 'Privacy Policy' %}</a></li>
+				<li><a href="#">{% trans 'Terms of Service' %}</a></li>
+				<li><a href="#">{% trans 'Security' %}</a></li>
+			</ul>
+		</div>
+	</footer>
+    <!-- footer  end -->
+     {% if user.is_staff or user|can_translate %}
         <div id="admin_controls">
             <ul id="site_controls">
                 {% if user.is_staff %}
@@ -148,27 +137,30 @@
     {% endif %}
     {% block bottom_scripts %}{% endblock %}
 
-    {% if not DEBUG and not RUN_LOCALLY %}
-        <script type="text/javascript">
-            var _gaq = _gaq || [];
-            _gaq.push(['_setAccount', '{{ GOOGLE_ANALYTICS_NUMBER }}']);
-            _gaq.push(['_setDomainName', '.amara.org']);
-            _gaq.push(['_trackPageview']);
-            {% if not RUN_LOCALLY %}
-                {% block analytics %}{% endblock %}
-                (function() {
-                    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-                    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-                    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-                })();
-            {% endif %}
-        </script>
-        <script src="//cdn.optimizely.com/js/12019399.js"></script>
-    {% else %}
-        <script src="/site_media/js/highlight.min.js"></script>
-        <link rel="stylesheet" href="/site_media/css/github.min.css">
-        <script>hljs.initHighlightingOnLoad();</script>
-    {% endif %}
+{% if not DEBUG and not RUN_LOCALLY %}
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+
+        _gaq.push(['_setAccount', '{{ GOOGLE_ANALYTICS_NUMBER }}']);
+
+        _gaq.push(['_setDomainName', '.amara.org']);
+        _gaq.push(['_trackPageview']);
+        {% if not RUN_LOCALLY %}
+            {% block analytics %}{% endblock %}
+            (function() {
+                var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+            })();
+        {% endif %}
+    </script>
+    <script src="//cdn.optimizely.com/js/12019399.js"></script>
+{% else %}
+    <script src="/site_media/js/highlight.min.js"></script>
+    <link rel="stylesheet" href="/site_media/css/github.min.css">
+    <script>hljs.initHighlightingOnLoad();</script>
+{% endif %}
 
 </body>
 </html>
