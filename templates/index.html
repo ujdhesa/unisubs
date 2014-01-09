@@ -1,308 +1,503 @@
-{% extends "base.html" %}
-{% load i18n media_compressor feedback recent_activity widget i18n announcement_tags messages_tags profiles_tags teams_tags %}
-{% block body_attrs %}id="index"{% endblock %}
+{% load i18n media_compressor feedback recent_activity widget i18n announcement_tags messages_tags profiles_tags teams_tags auth_tags %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
 
-{% block css %}
-{% include_bundle "base" %}
-{% include_bundle "new_home" %}
-{% endblock %}
 
-{% block scripts %}
-{% include_bundle "unisubs-onsite-compiled" %}
-<script src="{% url videos:rpc_api %}" type="text/javascript"></script>  
-{% endblock %}
+<!DOCTYPE html>
+<html {% if LANGUAGE_BIDI %}dir="rtl"{% endif %} xmlns:og="http://opengraphprotocol.org/schema/" xmlns:fb="http://www.facebook.com/2008/fbml" xml:lang="en" lang="en" {% block html_attrs %}{% endblock %} class="base">
 
-{% block top-info %}
-<div class="top-info">
-        <div class="info-holder">
-        <div class="center-info">
-            <strong class="subtitles">We <span class="heart">heart</span>subtitles!</strong>
-            <h1>{% trans 'Amara is the largest and most advanced captioning and subtitling platform in the world.' %}</h1>
-            <div class="caption">
-                <div class="caption-block">
-                    <div class="caption-hold">
-                        <strong class="head-caption">{% trans 'Need captions or subtitles?' %}</strong>
-                        <a href="#" class="btn-red">{% trans 'CONTACT US' %}</a>
+<head>
+    <title>{% block title %}Amara - {% trans 'Caption, translate, subtitle and transcribe video.' %}{% endblock %}</title>
+
+    <meta name="description" content="The easiest way to caption and translate any video, with crowdsourcing, volunteers, and professional services." />
+
+    <meta charset="utf-8" />
+    {% if not current_site.name == 'amara-production' %}
+        <meta name="robots" content="noindex, nofollow"/>
+    {% endif %}
+    {% block opengraph-head %}
+        <meta property="fb:admins" content="539835590"/>
+    {% endblock  %}
+
+    <link rel="shortcut icon" type="image/png" href="{{ STATIC_URL }}images/favicon.png" />
+    <link rel="icon" type="image/png" href="{{ STATIC_URL }}images/favicon.png" />
+
+    <!--[if IE]>
+        <style type="text/css"> .group { display: block; zoom: 1; } </style>
+    <![endif]-->
+    <!--[if gte IE 8]>
+        <link href="{{ STATIC_URL }}css/ie8.css" media="all" type="text/css" rel="stylesheet" />
+    <![endif]-->
+    <!--[if IE 8]>
+        <style> .notIE { display: none !important ; } </style>
+    <![endif]-->
+    <!--[if lt IE 9]>
+        <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    {% include_bundle "site_base_js" %}
+    <script type="text/javascript" src="{% url js_i18n_catalog %}"></script>
+    <script src="{% url profiles:rpc_api %}" type="text/javascript"></script>
+    <script type="text/javascript">
+        window.STATIC_URL = '{{ STATIC_URL }}';
+        {% block oldmodal %}
+            window.OLD_MODAL = true;
+        {% endblock %}
+    </script>
+    {% block css %}
+    {% include_bundle "base" %}
+    {% include_bundle "new_home" %}
+    {% endblock %}
+
+    {% block scripts %}
+    {% include_bundle "unisubs-onsite-compiled" %}
+    <script src="{% url videos:rpc_api %}" type="text/javascript"></script>
+    {% endblock %}
+</head>
+
+<body {% block body_attrs %}id="index"{% endblock %}>
+    {% csrf_token %}
+    {% announcement %}
+    {% if user.is_authenticated %}
+        {% messages %}
+        {% block email_confirmation_block %}
+            {% email_confirmation_notification %}
+        {% endblock %}
+    {% endif %}
+    {% require_email_dialog %}
+
+    {% block mainblock %}
+     <!-- wrapper  start -->
+	<div id="wrapper">
+		<div class="w1">
+			<!-- header  start -->
+			<header id="header">
+                <div class="holder">
+                    <div class="header-box">
+                        {% if user.is_authenticated %}
+                        <li id="me_menu">{% top_user_panel %}</li>
+                        {% else %}
+                        <a href="{% url auth:login %}?next={{ request.path_info|urlencode }}" class="btn-red">{% trans 'SIGN UP/SIGN IN' %}</a>
+                        {% endif %}
+                        <div class="box-form">
+                            <form action="#" class="form">
+                                <fieldset>
+                                    <div class="text">
+                                        <form method="get" action="{{BASE_URL}}{% url search:index %}">
+                                            <button class="btn-search" type="submit">{% trans 'search' %}</button>
+                                            <input type="text" name="q" class="text-input" value="" placeholder="Search Subtitled Videos"/>
+                                         </form>
+                                    </div>
+                                </fieldset>
+                            </form>
+                        </div>
+                        <ul class="menu-top">
+                            <li><a href="{% url videos:create %}">{%trans 'Subtitle a Video' %}</a></li>
+                            <li><a href="http://about.amara.org/volunteer/">{% trans 'Volunteer' %}</a></li>
+                            <li><a href="#">{% trans 'Browse' %}</a></li>
+                            <li><a href="http://about.amara.org/enterprise/">{% trans 'Order Captions' %}</a></li>
+                            <li><a href="http://support.universalsubtitles.org/solution/categories/13504">{% trans 'Help' %}</a></li>
+                        </ul>
+                        <strong class="logo"><a href="#">amara</a></strong>
+                    </div>
+                </div>
+            </header>
+           <!-- header end -->
+			<div class="top-info">
+					<div class="info-holder">
+					<div class="center-info">
+						<strong class="subtitles">We <span class="heart">heart</span>subtitles!</strong>
+						<h1>Amara is the largest and most advanced captioning and subtitling platform in the world.</h1>
+						<div class="caption">
+							<div class="caption-block">
+								<div class="caption-hold">
+									<strong class="head-caption">Need captions or subtitles?</strong>
+									<a href="#" class="btn-red">CONTACT US</a>
+								</div>
+							</div>
+						</div>
+						<div class="info-box">
+							<p>Over 300,000 sets of subtitles created in more than 130 languages.</p>
+							<a class="video" href="#">Recently Featured Videos</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- header  end
+			     main  start -->
+			<div id="main">
+				<div class="publish">
+                    <div class="publish-block">
+                        <strong class="publish-list">{% trans 'Trusted by:' %}</strong>
+                        <ul class="list-info">
+                            <li><img src="{{ STATIC_URL }}images/home/img01.png " alt="image" width="140" height="60" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img03.png" alt="image" width="46" height="60" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img05.png" alt="image" width="94" height="60" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img07.png" alt="image" width="97" height="60" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img09.png" alt="image" width="104" height="60" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img11.png" alt="image" width="52" height="60" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img13.png" alt="image" width="39" height="60" /></li>
+                        </ul>
+                    </div>
+                <div class="publish-block publish-hold">
+                        <strong class="publish-list">{% trans 'Publish with:' %}</strong>
+                        <ul class="list-info">
+                            <li><img src="{{ STATIC_URL }}images/home/img02.jpg" alt="image" width="88" height="56" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img04.jpg" alt="image" width="122" height="56" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img06.jpg" alt="image" width="111" height="56" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img08.jpg" alt="image" width="101" height="56" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img10.jpg" alt="image" width="36" height="56" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img12.jpg" alt="image" width="95" height="56" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img14.jpg" alt="image" width="167" height="56" /></li>
+                        </ul>
+                </div>
+            </div>
+            <nav id="nav">
+                <ul class="menu">
+                    <li><a href="#01">{% trans 'Individuals' %}</a></li>
+                    <li><a href="#02">{% trans 'Volunteers' %}</a></li>
+                    <li><a href="#03">{% trans 'Companies' %}</a></li>
+                    <li><a href="#04">{% trans 'YouTube Channels' %}</a></li>
+                    <li><a href="#05">{% trans 'Film' %}</a></li>
+                    <li><a href="#06">{% trans 'Education and Non­Profit' %}</a></li>
+                </ul>
+            </nav>
+            <div class="block" id="01">
+                <div class="block-img">
+                    <div class="holder">
+                        <img class="img-view" src="{{ STATIC_URL }}images/home/img16.jpg" alt="image" width="289" height="236" />
+                        <h2>{% trans 'For Individuals' %}</h2>
+                        <strong class="title">{% trans 'Amara’s open, collaborative subtitle creator isn’t just free­­ it’s the best in the world.  Try it!' %}</strong>
+                        <form action="#" class="form">
+                            <fieldset>
+                                <div class="text">
+                                    <input type="text" class="text-input" value="" placeholder="Video URL" />
+                                    <button class="btn-red" type="submit">{% trans 'subtitle it' %}</button>
+                                </div>
+                            </fieldset>
+                        </form>
+                        <p>{% trans 'Just enter a YouTube, Vimeo, HTML5, Brightcove, or MP4 video and get started. Invite anyone to help' %}</p>
+                        <a class="watch-channel" href="#">{% trans 'Sync subtitles to your personal YouTube channel' %}</a>
+                        <a class="watch-channel" href="#">{% trans 'Try our interactive transcript viewer' %}</a>
+                        </div>
+                </div>
+            </div>
+            <div class="block aside" id="02">
+                <div class="block-img">
+                    <div class="holder">
+                        <img class="img-view" src="{{ STATIC_URL }}images/home/img17.jpg" alt="image" width="237" height="236" />
+                        <h2>{% trans 'For Volunteers' %}</h2>
+                        <strong class="title">{% trans 'Amara is the largest captioning and subtitling community in the world! Join over 150,000 people that are contributing to make video accessible for everyone.' %}</strong>
+                        <p>{% trans 'Our groundbreaking collaborative subtitling process makes it possible, but it all depends on you. And don’t worry­­ we’ve made subtitling fun and easy.' %}</p>
+                        <p>{% trans 'Dozens of organizations need you now:  ' %}<a href="#">{% trans 'Volunteer Opportunities' %}</a></p>
+                        <ul class="list">
+                            <li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
+                            <li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
+                            <li><a href="#" class="btn-blue">{% trans 'Manage Internal Subtitling Projects' %}</a></li>
+                        </ul>
                     </div>
                 </div>
             </div>
-            <div class="info-box">
-                <p>{% trans 'Over 300,000 sets of subtitles created in more than 130 languages.' %}</p>
-                <a class="video" href="#">{% trans 'Recently Featured Videos' %}</a>
+            <div class="block" id="03">
+                <div class="block-img">
+                    <div class="holder">
+                        <img class="img-view" src="{{ STATIC_URL }}images/home/img18.jpg" alt="image" width="243" height="276" />
+                        <h2>{% trans 'For Companies' %}</h2>
+                        <strong class="title">{% trans 'Amara provides captions and subtitles for global companies­­ public web videos, internal corporate videos, staff training videos, and much more.' %}</strong>
+                        <p>{% trans 'Use our professional caption and translation services, manage your own internal captioning and translation project, or create a public community.' %}</p>
+                        <div class="text-box">
+                            <ul class="list">
+                                <li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
+                                <li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
+                                <li><a href="#" class="btn-blue">{% trans 'Manage Internal Subtitling Projects' %}</a></li>
+                            </ul>
+                        </div>
+                        <ul class="list-img">
+                            <li><img src="{{ STATIC_URL }}images/home/img26.jpg" alt="image" width="103" height="70" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img27.jpg" alt="image" width="70" height="70" /></li>
+                            <li><img src="{{ STATIC_URL }}images/home/img28.jpg" alt="image" width="75" height="70" /></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
+            <div class="block aside" id="04">
+                <div class="block-img">
+                    <div class="holder">
+                        <img class="img-view" src="{{ STATIC_URL }}images/home/img19.jpg" alt="image" width="237" height="236" />
+                        <h2>{% trans 'For Youtube Channels' %}</h2>
+                        <strong class="title">{% trans 'Caption and translate your YouTube channel easily and more affordably than ever before.' %}</strong>
+                        <p>{% trans 'Use Amara’s professional caption and translation services or create a volunteer community to engage your viewers in making high quality translations in dozens of languages.' %}</p>
+                        <p><a href="#">{% trans 'Get Started' %}</a></p>
+                        <div class="holder-list">
+                            <ul class="list">
+                                    <li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
+                                    <li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
+                            </ul>
+                            <ul class="list-img">
+                                <li>
+                                        <img src="{{ STATIC_URL }}images/home/img30.jpg" alt="image" width="100" height="62" />
+                                        <span class="figcaption">{% trans '1.5 Million Subscribers' %} </span>
+                                </li>
+                                <li>
+                                        <img src="{{ STATIC_URL }}images/home/img29.jpg" alt="image" width="103" height="62" />
+                                        <span class="figcaption">{% trans '8 Million Subscribers' %}</span>
+                                </li>
+                                <li>
+                                        <img src="{{ STATIC_URL }}images/home/img31.jpg" alt="image" width="114" height="62" />
+                                        <span class="figcaption">{% trans '400k Subscribers' %} </span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="block" id="06">
+                <div class="block-img">
+                    <div class="holder">
+                        <img class="img-view" src="{{ STATIC_URL }}images/home/img20.jpg" alt="image" width="257" height="246" />
+                        <h2>{% trans 'Education' %}</h2>
+                        <p>{% trans 'Amara works with colleges, universities, and the leading online  education companies in the world.' %}</p>
+                        <ul class="list">
+                            <li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
+                            <li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
+                            <li><a href="#" class="btn-blue">{% trans 'Manage Internal Subtitling Projects' %}</a></li>
+                        </ul>
+                        <div class="list-block">
+                            <ul class="list-img">
+                                    <li><img src="{{ STATIC_URL }}images/home/img32.jpg" alt="image" width="284" height="70" /></li>
+                                    <li><img src="{{ STATIC_URL }}images/home/img33.jpg" alt="image" width="145" height="70" /></li>
+                                    <li><img src="{{ STATIC_URL }}images/home/img34.jpg" alt="image" width="59" height="70" /></li>
+                                    <li><img src="{{ STATIC_URL }}images/home/img35.jpg" alt="image" width="105" height="70" /></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="block aside">
+                <div class="block-img">
+                    <div class="holder">
+                        <img class="img-view" src="{{ STATIC_URL }}images/home/img21.jpg" alt="image" width="271" height="237" />
+                        <h2>{% trans 'Organizations' %}</h2>
+                        <strong class="title">{% trans 'Non­profit organizations use Amara to share their message and work around the world.' %}</strong>
+                        <p>{% trans 'Use our professional caption and translation services, manage your own internal captioning and translation project, or create a public community.' %}</p>
+                        <ul class="list">
+                                <li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
+                                <li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
+                                <li><a href="#" class="btn-blue">{% trans 'Manage Internal Subtitling Projects' %}</a></li>
+                        </ul>
+                        <ul class="list-img">
+                                <li><img src="{{ STATIC_URL }}images/home/img28.jpg" alt="image" width="75" height="70" /></li>
+                                <li><img src="{{ STATIC_URL }}images/home/img36.jpg" alt="image" width="232" height="70" /></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="block" id="05">
+                <div class="block-img">
+                    <div class="holder">
+                        <h2>{% trans 'Film and Television' %}</h2>
+                        <p>{% trans 'Amara captions and translates films and television shows for Netflix, iTunes, DVDs, and online streaming.' %}</p>
+                        <div class="customer-hold">
+                            <div class="customer">
+                                <strong class="denote">{% trans 'Customers:' %}</strong>
+                                <ul class="list-img">
+                                    <li><img src="{{ STATIC_URL }}images/home/img37.jpg" alt="image" width="169" height="93" /></li>
+                                    <li><img src="{{ STATIC_URL }}images/home/img38.jpg" alt="image" width="63" height="93" /></li>
+                                    <li><img src="{{ STATIC_URL }}images/home/img39.jpg" alt="image" width="78" height="93" /></li>
+                                </ul>
+                            </div>
+                            <div class="customer">
+                                <strong class="denote">{% trans 'Delivering to:' %}</strong>
+                                <ul class="list-img">
+                                    <li><img src="{{ STATIC_URL }}images/home/img40.jpg" alt="image" width="106" height="93" /></li>
+                                    <li><img src="{{ STATIC_URL }}images/home/img41.jpg" alt="image" width="141" height="93" /></li>
+                                    <li><img src="{{ STATIC_URL }}images/home/img42.jpg" alt="image" width="79" height="93" /></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <ul class="list">
+                            <li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
+                            <li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
+                            <li><a href="#" class="btn-blue">{% trans 'Manage Internal Subtitling Projects' %}</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="block aside">
+                <div class="block-img">
+                    <div class="holder">
+                        <img class="img-view" src="{{ STATIC_URL }}images/home/img22.jpg" alt="image" width="288" height="236" />
+                        <h2>{% trans 'Service Providers' %}</h2>
+                        <p>{% trans 'Amara is the most advanced cloud subtitle platform in the world.  Captioning and subtitling companies and film companies use Amara to manage and coordinate their own subtitling work.' %}</p>
+                        <p><a href="#">{% trans 'Contact us' %}</a></p>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-hold">
+                <div class="gallery">
+                    <a href="#" class="link-prev">&lt;</a>
+                    <div class="gallery-holder">
+                        <ul>
+                                <li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
+                                <li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
+                                <li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
+                                <li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
+                                <li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
+                                <li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
+                        </ul>
+                    </div>
+                    <a href="#" class="link-next">&gt;</a>
+                    <ul class="switcher">
+                        <li class="active"><a href="#"><img src="{{ STATIC_URL }}images/home/img43.png" alt="image" width="30" height="26" /></a></li><li>
+                        <a href="#"><img src="{{ STATIC_URL }}images/home/img44.png" alt="image" width="30" height="26" /></a></li><li>
+                        <a href="#"><img src="{{ STATIC_URL }}images/home/img45.png" alt="image" width="30" height="26" /></a></li><li>
+                        <a href="#"><img src="{{ STATIC_URL }}images/home/img46.png" alt="image" width="30" height="26" /></a></li><li>
+                        <a href="#"><img src="{{ STATIC_URL }}images/home/img47.png" alt="image" width="30" height="26" /></a></li><li>
+                        <a href="#"><img src="{{ STATIC_URL }}images/home/img48.png" alt="image" width="30" height="26" /></a></li>
+                    </ul>
+                    <ul class="list-item">
+                        <li class="active">
+                                <h2>{% trans 'Subtitle Editor' %}</h2>
+                                <p>{% trans 'The best in the world.1' %}</p>
+                        </li>
+                        <li>
+                                <h2>{% trans 'Subtitle Editor test' %}</h2>
+                                <p>{% trans 'The best in the world.2' %}</p>
+                        </li>
+                        <li>
+                                <h2>{% trans 'Subtitle Editor test1' %}</h2>
+                                <p>{% trans 'The best in the world.3' %}</p>
+                        </li>
+                        <li>
+                                <h2>{% trans 'Subtitle Editor test' %}</h2>
+                                <p>{% trans 'The best in the world.4' %}</p>
+                        </li>
+                        <li>
+                                <h2>{% trans 'Subtitle Editor' %}</h2>
+                                <p>{% trans 'The best in the world.5' %}</p>
+                        </li>
+                        <li>
+                                <h2>{% trans 'Subtitle Editor' %}</h2>
+                                <p>{% trans 'The best in the world.6' %}</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="block-hold">
+                <div class="info">
+                        <img src="{{ STATIC_URL }}images/home/img24.jpg" alt="image" width="128" height="106" />
+                        <h2>{% trans 'Professional caption and translation' %}</h2>
+                        <p>{% trans 'Amara’s world class team delivers quickly at extremely high quality and value.' %}</p>
+                </div>
+                <div class="info">
+                    <img src="{{ STATIC_URL }}images/home/img25.jpg" alt="image" width="158" height="106" />
+                    <h2>{% trans 'Build a volunteer community' %}</h2>
+                    <p>{% trans 'Engage your viewers to create high quality translations in dozens of languages' %}</p>
+                </div>
+            </div>
+			</div>
+			<!-- main  end -->
+		</div>
+	</div>
+    {% endblock %}
+	<!-- wrapper  end
+	     footer  start -->
+	<footer id="footer">
+		<div class="holder">
+			<ul class="social-list">
+				<li><a href="#" class="fasebook">Facebook</a></li>
+				<li><a class="twitter" href="#">Twitter</a></li>
+				<li><a class="shirt" href="#">Buy a T-shirt!</a></li>
+			</ul>
+			<ul class="menu">
+				<li><a href="#">About</a></li>
+				<li><a href="#">Jobs</a></li>
+				<li><a href="#">Contact Us</a></li>
+				<li><a href="#">Privacy Policy</a></li>
+				<li><a href="#">Terms of Service</a></li>
+				<li><a href="#">Security</a></li>
+			</ul>
+		</div>
+	</footer>
+	<!-- footer  end -->
+     {% if user.is_staff or user|can_translate %}
+        <div id="admin_controls">
+            <ul id="site_controls">
+                {% if user.is_staff %}
+                    <li><a target="_blank" href="{% url admin:index %}">{% trans 'Admin' %}</a></li>
+                {% endif %}
+                {% if user.is_superuser %}
+                    <li><a target="_blank" href="http://sentry.pculture.org:9000">{% trans 'Sentry' %}</a></li>
+                {% endif %}
+                {% if user|can_translate %}
+                    <li><a target="_blank" href="{% url rosetta-pick-file %}"><span>{% trans 'Rosetta' %}</span></a></li>
+                {% endif %}
+                {% if user.is_superuser %}
+                    <li><a target="_blank" href="{% url auth:login_trap %}">{% trans 'Impersonate' %}</a></li>
+                {% endif %}
+                {% if user.is_superuser %}
+                    <li><a target="_blank" href="{% url billing %}">{% trans 'Billing' %}</a></li>
+                {% endif %}
+                <li><a href="https://github.com/pculture/unisubs/commit/{{ LAST_COMMIT_GUID }}" title="{{ LAST_COMMIT_GUID }}">Github</a></li>
+            </ul>
+            {% block page_controls %}{% endblock %}
         </div>
-    </div>
-</div>
-{% endblock %}
+    {% endif %}
+    {% block bottom_scripts %}{% endblock %}
 
-{% block main_content %}
-<div class="publish">
-					<div class="publish-block">
-						<strong class="publish-list">{% trans 'Trusted by:' %}</strong>
-						<ul class="list-info">
-							<li><img src="{{ STATIC_URL }}images/home/img01.png " alt="image" width="140" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img03.png" alt="image" width="46" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img05.png" alt="image" width="94" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img07.png" alt="image" width="97" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img09.png" alt="image" width="104" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img11.png" alt="image" width="52" height="60" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img13.png" alt="image" width="39" height="60" /></li>
-						</ul>
-					</div>
-					<div class="publish-block publish-hold">
-						<strong class="publish-list">{% trans 'Publish with:' %}</strong>
-						<ul class="list-info">
-							<li><img src="{{ STATIC_URL }}images/home/img02.jpg" alt="image" width="88" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img04.jpg" alt="image" width="122" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img06.jpg" alt="image" width="111" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img08.jpg" alt="image" width="101" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img10.jpg" alt="image" width="36" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img12.jpg" alt="image" width="95" height="56" /></li>
-							<li><img src="{{ STATIC_URL }}images/home/img14.jpg" alt="image" width="167" height="56" /></li>
-						</ul>
-					</div>
-				</div>
-<nav id="nav">
-					<ul class="menu">
-						<li><a href="#01">{% trans 'Individuals' %}</a></li>
-						<li><a href="#02">{% trans 'Volunteers' %}</a></li>
-						<li><a href="#03">{% trans 'Companies' %}</a></li>
-						<li><a href="#04">{% trans 'YouTube Channels' %}</a></li>
-						<li><a href="#05">{% trans 'Film' %}</a></li>
-						<li><a href="#06">{% trans 'Education and Non­Profit' %}</a></li>
-					</ul>
-				</nav>
-				<div class="block" id="01">
-					<div class="block-img">
-						<div class="holder">
-							<img class="img-view" src="{{ STATIC_URL }}images/home/img16.jpg" alt="image" width="289" height="236" />
-							<h2>{% trans 'For Individuals' %}</h2>
-							<strong class="title">{% trans 'Amara’s open, collaborative subtitle creator isn’t just free­­ it’s the best in the world.  Try it!' %}</strong>
-							<form action="#" class="form">
-								<fieldset>
-									<div class="text">
-										<input type="text" class="text-input" value="" placeholder="Video URL" />
-										<button class="btn-red" type="submit">{% trans 'subtitle it' %}</button>
-									</div>
-								</fieldset>
-							</form>
-							<p>{% trans 'Just enter a YouTube, Vimeo, HTML5, Brightcove, or MP4 video and get started. Invite anyone to help' %}</p>
-							<a class="watch-channel" href="#">{% trans 'Sync subtitles to your personal YouTube channel' %}</a>
-							<a class="watch-channel" href="#">{% trans 'Try our interactive transcript viewer' %}</a>
-						</div>
-					</div>
-				</div>
-				<div class="block aside" id="02">
-					<div class="block-img">
-						<div class="holder">
-							<img class="img-view" src="{{ STATIC_URL }}images/home/img17.jpg" alt="image" width="237" height="236" />
-							<h2>{% trans 'For Volunteers' %}</h2>
-							<strong class="title">{% trans 'Amara is the largest captioning and subtitling community in the world! Join over 150,000 people that are contributing to make video accessible for everyone.' %}</strong>
-							<p>{% trans 'Our groundbreaking collaborative subtitling process makes it possible, but it all depends on you. And don’t worry­­ we’ve made subtitling fun and easy.' %}</p>
-							<p>{% trans 'Dozens of organizations need you now:  ' %}<a href="#">{% trans 'Volunteer Opportunities' %}</a></p>
-							<ul class="list">
-								<li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
-								<li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
-								<li><a href="#" class="btn-blue">{% trans 'Manage Internal Subtitling Projects' %}</a></li>
-							</ul>
-						</div>
-					</div>
-				</div>
-				<div class="block" id="03">
-					<div class="block-img">
-						<div class="holder">
-							<img class="img-view" src="{{ STATIC_URL }}images/home/img18.jpg" alt="image" width="243" height="276" />
-							<h2>{% trans 'For Companies' %}</h2>
-							<strong class="title">{% trans 'Amara provides captions and subtitles for global companies­­ public web videos, internal corporate videos, staff training videos, and much more.' %}</strong>
-							<p>{% trans 'Use our professional caption and translation services, manage your own internal captioning and translation project, or create a public community.' %}</p>
-							<div class="text-box">
-								<ul class="list">
-									<li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
-									<li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
-									<li><a href="#" class="btn-blue">{% trans 'Manage Internal Subtitling Projects' %}</a></li>
-								</ul>
-							</div>
-							<ul class="list-img">
-								<li><img src="{{ STATIC_URL }}images/home/img26.jpg" alt="image" width="103" height="70" /></li>
-								<li><img src="{{ STATIC_URL }}images/home/img27.jpg" alt="image" width="70" height="70" /></li>
-								<li><img src="{{ STATIC_URL }}images/home/img28.jpg" alt="image" width="75" height="70" /></li>
-							</ul>
-						</div>
-					</div>
-				</div>
-				<div class="block aside" id="04">
-					<div class="block-img">
-						<div class="holder">
-							<img class="img-view" src="{{ STATIC_URL }}images/home/img19.jpg" alt="image" width="237" height="236" />
-							<h2>{% trans 'For Youtube Channels' %}</h2>
-							<strong class="title">{% trans 'Caption and translate your YouTube channel easily and more affordably than ever before.' %}</strong>
-							<p>{% trans 'Use Amara’s professional caption and translation services or create a volunteer community to engage your viewers in making high quality translations in dozens of languages.' %}</p>
-							<p><a href="#">{% trans 'Get Started' %}</a></p>
-							<div class="holder-list">
-								<ul class="list">
-									<li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
-									<li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
-								</ul>
-								<ul class="list-img">
-									<li>
-										<img src="{{ STATIC_URL }}images/home/img30.jpg" alt="image" width="100" height="62" />
-										<span class="figcaption">{% trans '1.5 Million Subscribers' %} </span>
-									</li>
-									<li>
-										<img src="{{ STATIC_URL }}images/home/img29.jpg" alt="image" width="103" height="62" />
-										<span class="figcaption">{% trans '8 Million Subscribers' %}</span>
-									</li>
-									<li>
-										<img src="{{ STATIC_URL }}images/home/img31.jpg" alt="image" width="114" height="62" />
-										<span class="figcaption">{% trans '400k Subscribers' %} </span>
-									</li>
-								</ul>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="block"  id="06">
-					<div class="block-img">
-						<div class="holder">
-							<img class="img-view" src="{{ STATIC_URL }}images/home/img20.jpg" alt="image" width="257" height="246" />
-							<h2>{% trans 'Education' %}</h2>
-							<p>{% trans 'Amara works with colleges, universities, and the leading online  education companies in the world.' %}</p>
-							<ul class="list">
-								<li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
-								<li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
-								<li><a href="#" class="btn-blue">{% trans 'Manage Internal Subtitling Projects' %}</a></li>
-							</ul>
-							<div class="list-block">
-								<ul class="list-img">
-									<li><img src="{{ STATIC_URL }}images/home/img32.jpg" alt="image" width="284" height="70" /></li>
-									<li><img src="{{ STATIC_URL }}images/home/img33.jpg" alt="image" width="145" height="70" /></li>
-									<li><img src="{{ STATIC_URL }}images/home/img34.jpg" alt="image" width="59" height="70" /></li>
-									<li><img src="{{ STATIC_URL }}images/home/img35.jpg" alt="image" width="105" height="70" /></li>
-								</ul>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="block aside">
-					<div class="block-img">
-						<div class="holder">
-							<img class="img-view" src="{{ STATIC_URL }}images/home/img21.jpg" alt="image" width="271" height="237" />
-							<h2>{% trans 'Organizations' %}</h2>
-							<strong class="title">{% trans 'Non­profit organizations use Amara to share their message and work around the world.' %}</strong>
-							<p>{% trans 'Use our professional caption and translation services, manage your own internal captioning and translation project, or create a public community.' %}</p>
-							<ul class="list">
-								<li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
-								<li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
-								<li><a href="#" class="btn-blue">{% trans 'Manage Internal Subtitling Projects' %}</a></li>
-							</ul>
-							<ul class="list-img">
-								<li><img src="{{ STATIC_URL }}images/home/img28.jpg" alt="image" width="75" height="70" /></li>
-								<li><img src="{{ STATIC_URL }}images/home/img36.jpg" alt="image" width="232" height="70" /></li>
-							</ul>
-						</div>
-					</div>
-				</div>
-				<div class="block"  id="05">
-					<div class="block-img">
-						<div class="holder">
-							<h2>{% trans 'Film and Television' %}</h2>
-							<p>{% trans 'Amara captions and translates films and television shows for Netflix, iTunes, DVDs, and online streaming.' %}</p>
-							<div class="customer-hold">
-								<div class="customer">
-									<strong class="denote">{% trans 'Customers:' %}</strong>
-									<ul class="list-img">
-										<li><img src="{{ STATIC_URL }}images/home/img37.jpg" alt="image" width="169" height="93" /></li>
-										<li><img src="{{ STATIC_URL }}images/home/img38.jpg" alt="image" width="63" height="93" /></li>
-										<li><img src="{{ STATIC_URL }}images/home/img39.jpg" alt="image" width="78" height="93" /></li>
-									</ul>
-								</div>
-								<div class="customer">
-									<strong class="denote">{% trans 'Delivering to:' %}</strong>
-									<ul class="list-img">
-										<li><img src="{{ STATIC_URL }}images/home/img40.jpg" alt="image" width="106" height="93" /></li>
-										<li><img src="{{ STATIC_URL }}images/home/img41.jpg" alt="image" width="141" height="93" /></li>
-										<li><img src="{{ STATIC_URL }}images/home/img42.jpg" alt="image" width="79" height="93" /></li>
-									</ul>
-								</div>
-							</div>
-							<ul class="list">
-								<li><a href="#" class="btn-blue">{% trans 'Order Captions or Subtitles' %}</a></li>
-								<li><a href="#" class="btn-blue">{% trans 'Create a Volunteer Community' %}</a></li>
-								<li><a href="#" class="btn-blue">{% trans 'Manage Internal Subtitling Projects' %}</a></li>
-							</ul>
-						</div>
-					</div>
-				</div>
-				<div class="block aside">
-					<div class="block-img">
-						<div class="holder">
-							<img class="img-view" src="{{ STATIC_URL }}images/home/img22.jpg" alt="image" width="288" height="236" />
-							<h2>{% trans 'Service Providers' %}</h2>
-							<p>{% trans 'Amara is the most advanced cloud subtitle platform in the world.  Captioning and subtitling companies and film companies use Amara to manage and coordinate their own subtitling work.' %}</p>
-							<p><a href="#">{% trans 'Contact us' %}</a></p>
-						</div>
-					</div>
-				</div>
-				<div class="gallery-hold">
-					<div class="gallery">
-						<a href="#" class="link-prev">&lt;</a>
-						<div class="gallery-holder">
-							<ul>
-								<li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
-								<li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
-								<li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
-								<li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
-								<li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
-								<li><img src="{{ STATIC_URL }}images/home/img23.jpg" alt="image" width="692" height="437" /></li>
-							</ul>
-						</div>
-						<a href="#" class="link-next">&gt;</a>
-						<ul class="switcher">
-							<li class="active"><a href="#"><img src="{{ STATIC_URL }}images/home/img43.png" alt="image" width="30" height="26" /></a></li><li>
-							<a href="#"><img src="{{ STATIC_URL }}images/home/img44.png" alt="image" width="30" height="26" /></a></li><li>
-							<a href="#"><img src="{{ STATIC_URL }}images/home/img45.png" alt="image" width="30" height="26" /></a></li><li>
-							<a href="#"><img src="{{ STATIC_URL }}images/home/img46.png" alt="image" width="30" height="26" /></a></li><li>
-							<a href="#"><img src="{{ STATIC_URL }}images/home/img47.png" alt="image" width="30" height="26" /></a></li><li>
-							<a href="#"><img src="{{ STATIC_URL }}images/home/img48.png" alt="image" width="30" height="26" /></a></li>
-						</ul>
-						<ul class="list-item">
-							<li class="active">
-								<h2>{% trans 'Subtitle Editor' %}</h2>
-								<p>{% trans 'The best in the world.1' %}</p>
-							</li>
-							<li>
-								<h2>{% trans 'Subtitle Editor test' %}</h2>
-								<p>{% trans 'The best in the world.2' %}</p>
-							</li>
-							<li>
-								<h2>{% trans 'Subtitle Editor test1' %}</h2>
-								<p>{% trans 'The best in the world.3' %}</p>
-							</li>
-							<li>
-								<h2>{% trans 'Subtitle Editor test' %}</h2>
-								<p>{% trans 'The best in the world.4' %}</p>
-							</li>
-							<li>
-								<h2>{% trans 'Subtitle Editor' %}</h2>
-								<p>{% trans 'The best in the world.5' %}</p>
-							</li>
-							<li>
-								<h2>{% trans 'Subtitle Editor' %}</h2>
-								<p>{% trans 'The best in the world.6' %}</p>
-							</li>
-						</ul>
-					</div>
-				</div>
-				<div class="block-hold">
-						<div class="info">
-						<img src="{{ STATIC_URL }}images/home/img24.jpg" alt="image" width="128" height="106" />
-						<h2>{% trans 'Professional caption and translation' %}</h2>
-						<p>{% trans 'Amara’s world class team delivers quickly at extremely high quality and value.' %}</p>
-					</div>
-					<div class="info">
-						<img src="{{ STATIC_URL }}images/home/img25.jpg" alt="image" width="158" height="106" />
-						<h2>{% trans 'Build a volunteer community' %}</h2>
-						<p>{% trans 'Engage your viewers to create high quality translations in dozens of languages' %}</p>
-					</div>
-				</div>
-{% endblock %}
+{% if not DEBUG and not RUN_LOCALLY %}
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+
+        _gaq.push(['_setAccount', '{{ GOOGLE_ANALYTICS_NUMBER }}']);
+
+        _gaq.push(['_setDomainName', '.amara.org']);
+        _gaq.push(['_trackPageview']);
+        {% if not RUN_LOCALLY %}
+            {% block analytics %}{% endblock %}
+            (function() {
+                var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+            })();
+        {% endif %}
+    </script>
+    <script src="//cdn.optimizely.com/js/12019399.js"></script>
+{% else %}
+    <script src="/site_media/js/highlight.min.js"></script>
+    <link rel="stylesheet" href="/site_media/css/github.min.css">
+    <script>hljs.initHighlightingOnLoad();</script>
+{% endif %}
+
+
+
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

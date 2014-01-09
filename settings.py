@@ -627,6 +627,7 @@ MEDIA_BUNDLES = {
             "css/v1.css",
             "css/bootstrap.css",
             "css/all.css",
+            "css/html.css",
           ),
         },
     "video_history":{
