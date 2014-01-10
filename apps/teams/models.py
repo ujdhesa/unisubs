@@ -1891,7 +1891,7 @@ class BillingReport(models.Model):
         data_rows = []
         for approve_task in self._get_approved_tasks():
             video = approve_task.team_video.video
-            version = approve_task.new_subtitle_version
+            version = approve_task.get_subtitle_version()
             language = version.subtitle_language
 
             all_tasks = [approve_task]
