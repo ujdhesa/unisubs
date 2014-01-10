@@ -383,10 +383,14 @@ class VideoPageContext(dict):
                 request.user, team_video)
             self['user_is_team_member'] = team_video.team.user_is_member(
                 request.user)
+            self['show_collaborations_tab'] = (
+                self['user_is_team_member'] and
+                self['team'].collaborations_enabled())
         else:
             self['team'] = self['team_video'] = None
             self['can_create_trans'] = self['can_create_subs'] = True
             self['user_is_team_member'] = False
+            self['show_collaborations_tab'] = False
 
     @staticmethod
     def page_title(video):
@@ -398,14 +402,25 @@ class VideoPageContext(dict):
         method_name = 'setup_tab_%s' % tab.replace('-', '_')
         method = getattr(self, method_name, None)
         if method is not None:
-            method(request, video, video_url, tab)
+            method(request, video, video_url)
 
-    def setup_tab_video(self, request, video, video_url, tab):
+    def setup_tab_video(self, request, video, video_url):
         self['widget_params'] = _widget_params(
             request, video, language=None,
             video_url=video_url and video_url.effective_url,
             size=(620,370)
         )
+
+    def setup_tab_collaborations(self, request, video, video_url):
+        if self['team_video'] is not None:
+            query = (self['team_video'].collaboration_set
+                     .order_by('language_code'))
+            self['collaborations'] = [
+                (c, video.subtitle_language(c.language_code))
+                for c in query
+            ]
+        else:
+            self['collaborations'] = []
 
 @get_video_from_code
 def redirect_to_video(request, video):
@@ -428,7 +443,7 @@ def video(request, video, video_url=None, title=None):
     video.update_view_counter()
 
     tab = request.GET.get('tab')
-    if tab not in ('urls', 'comments', 'activity', 'video'):
+    if tab not in ('urls', 'comments', 'activity', 'video', 'collaborations'):
         # force tab to be video if it doesn't match either of the other
         # tabs
         tab = 'video'

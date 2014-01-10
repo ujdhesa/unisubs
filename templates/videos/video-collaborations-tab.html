@@ -1,0 +1,18 @@
+{% load i18n teams_tags %}
+<div class="tab" id="collaboration-tab">
+    <table class="collaborations">
+        {% for collaboration, language in collaborations %}
+        <tr>
+            <td>
+                {% if language %}
+                <a href="{% url videos:translation_history video.video_id language.language_code language.id %}?tab=collaboration">
+                    {% blocktrans with language=collaboration.get_language_code_display %}{{ language }} collaboration{% endblocktrans %}
+                </a>
+                {% else %}
+                {% blocktrans with language=collaboration.get_language_code_display %}{{ language }} collaboration{% endblocktrans %}
+                {% endif %}
+            <td>{{ collaboration.get_state_display }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
