@@ -395,9 +395,10 @@ class VideoPageContext(dict):
 
 
     def setup_tab(self, request, video, video_url, tab):
-        setup_tab_method = getattr(self, 'setup_tab_%s' % tab, None)
-        if setup_tab_method is not None:
-            setup_tab_method(request, video, video_url, tab)
+        method_name = 'setup_tab_%s' % tab.replace('-', '_')
+        method = getattr(self, method_name, None)
+        if method is not None:
+            method(request, video, video_url, tab)
 
     def setup_tab_video(self, request, video, video_url, tab):
         self['widget_params'] = _widget_params(
@@ -583,10 +584,14 @@ class LanguagePageContext(dict):
     all the languages classes.  For the specific language pages (subtitles,
     comments, revisions), we use a subclass of this.
     """
-    def __init__(self, request, video, lang_code, lang_id, version_id,
+
+    # number of subtitle revisions to show on the version history page
+    REVISIONS_PER_PAGE = 10
+
+    def __init__(self, request, video, lang_code, lang_id, version_id, tab,
                  tab_only=False):
         dict.__init__(self)
-        self.public_only = self.calc_public_only(request, video)
+        self._calc_team_details(request, video)
         language = self._get_language(video, lang_code, lang_id)
         version = self._get_version(request, video, language, version_id)
         self['video'] = video
@@ -597,7 +602,7 @@ class LanguagePageContext(dict):
             video.prefetch_languages(with_public_tips=True,
                                      with_private_tips=True)
             self.setup(request, video, language, version)
-        self.setup_tab(request, video, language, version)
+        self.setup_tab(request, video, language, version, tab)
 
     def _get_language(self, video, lang_code, lang_id):
         """Get a language for the language page views.
@@ -614,21 +619,31 @@ class LanguagePageContext(dict):
             raise Http404
         return language
 
-    def calc_public_only(self, request, video):
+    def _calc_team_details(self, request, video):
         team_video = video.get_team_video()
-        return (team_video and not team_video.team.is_member(request.user))
+        if team_video is not None:
+            team = team_video.team
+            self.team_member = team.get_member(request.user)
+            self.only_public_versions = self.team_member is not None
+            self['show_collaboration_tab'] = (
+                self.team_member is not None and
+                team.collaborations_enabled())
+        else:
+            self.team_member = None
+            self.only_public_versions = False
+            self['show_collaboration_tab'] = False
 
     def _get_version(self, request, video, language, version_id):
         """Get the SubtitleVersion to use for a language page."""
         team_video = video.get_team_video()
         if version_id:
             try:
-                return language.get_version_by_id(version_id,
-                                                  public=self.public_only)
+                return language.get_version_by_id(
+                    version_id, public=self.only_public_versions)
             except sub_models.SubtitleVersion.DoesNotExist:
                 raise Http404
         else:
-            return language.get_tip(public=self.public_only)
+            return language.get_tip(public=self.only_public_versions)
 
     def setup(self, request, video, language, version):
         """Setup context variables."""
@@ -659,17 +674,17 @@ class LanguagePageContext(dict):
         else:
             return False
 
-    def setup_tab(self, request, video, language, video_url):
-        """Setup tab-specific variables."""
-        pass
+    def setup_tab(self, request, video, language, video_url, tab):
+        setup_tab_method = getattr(self, 'setup_tab_%s' % tab, None)
+        if setup_tab_method is not None:
+            setup_tab_method(request, video, language, video_url)
 
     @staticmethod
     def page_title(language):
         template = string.Template(ugettext("$title with subtitles | Amara"))
         return template.substitute(title=language.title_display())
 
-class LanguagePageContextSubtitles(LanguagePageContext):
-    def setup_tab(self, request, video, language, version):
+    def setup_tab_subtitles(self, request, video, language, version):
         team_video = video.get_team_video()
         user_can_add_version = can_add_version(request.user, video,
                                                language.language_code)
@@ -690,14 +705,8 @@ class LanguagePageContextSubtitles(LanguagePageContext):
             self['rollback_allowed'] = self.calc_rollback_allowed(
                 request, version, language)
 
-class LanguagePageContextComments(LanguagePageContext):
-    pass
-
-class LanguagePageContextRevisions(LanguagePageContext):
-    REVISIONS_PER_PAGE = 10
-
-    def setup_tab(self, request, video, language, version):
-        if self.public_only:
+    def setup_tab_revisions(self, request, video, language, version):
+        if self.only_public_versions:
             revisions_qs = language.subtitleversion_set.public()
         else:
             revisions_qs = language.subtitleversion_set.extant()
@@ -708,8 +717,7 @@ class LanguagePageContextRevisions(LanguagePageContext):
         self.update(pagination_info)
         self['revisions'] = language.optimize_versions(revisions)
 
-class LanguagePageContextSyncHistory(LanguagePageContext):
-    def setup_tab(self, request, video, language, version):
+    def setup_tab_sync_history(self, request, video, language, version):
         self['sync_history'] = language.synchistory_set.order_by('-id').all()
         self['current_version'] = language.get_public_tip()
         synced_versions = []
@@ -728,30 +736,74 @@ class LanguagePageContextSyncHistory(LanguagePageContext):
             })
         self['synced_versions'] = synced_versions
 
+
+    def setup_tab_collaboration(self, request, video, language, version):
+        collaboration = video.get_team_video().collaboration_set.get(
+            language_code=language.language_code)
+
+        self.update({
+            'collaboration': collaboration,
+            'collaborators': collaboration.collaborators.all(),
+            'user_can_join': (self.team_member is not None and
+                              collaboration.can_join(self.team_member)),
+        })
+        for collaborator in self['collaborators']:
+            if collaborator.user == request.user:
+                self['user_is_collaborator'] = True
+                break
+        else:
+            self['user_is_collaborator'] = False
+
+def _redirect_to_language_page(video, lang, lang_id, version_id):
+    kwargs = {
+        'video_id': video.video_id,
+        'lang': lang,
+        'lang_id': lang_id,
+    }
+    if version_id is not None:
+        kwargs['version_id'] = version_id
+        name = 'videos:subtitleversion_detail'
+    else:
+        name = 'videos:translation_history'
+    return redirect(reverse(name, kwargs=kwargs))
+
+def _check_language_subtitles_permissions(tab, request, video, lang, lang_id,
+                                          version_id):
+    """Check that the user has access to a language page
+
+    If this method returns False, we will redirect the user to the default
+    tab.
+    """
+    if tab == 'sync-history':
+        if not request.user.is_staff:
+            messages.error(request, _(u"Admin permissions required"))
+            return False
+    elif tab == 'collaboration':
+        team_video = video.get_team_video()
+        if not team_video or not team_video.team.user_is_member(request.user):
+            messages.error(request, _(u"You are not a member of the team"))
+            return False
+    return True
+
 @get_video_from_code
 def language_subtitles(request, video, lang, lang_id, version_id=None):
-    tab = request.GET.get('tab')
-    if tab == 'revisions':
-        ContextClass = LanguagePageContextRevisions
-    elif tab == 'comments':
-        ContextClass = LanguagePageContextComments
-    elif tab == 'sync-history':
-        if not request.user.is_staff:
-            return redirect_to_login(request.build_absolute_uri())
-        ContextClass = LanguagePageContextSyncHistory
-    else:
+    tab = request.GET.get('tab', 'subtitles')
+    if tab not in ('subtitles', 'comments', 'revisions', 'collaboration',
+                   'sync-history'):
         # force tab to be subtitles if it doesn't match either of the other
         # tabs
         tab = 'subtitles'
-        ContextClass = LanguagePageContextSubtitles
-
+    if not _check_language_subtitles_permissions(tab, request, video, lang,
+                                                lang_id, version_id):
+        return _redirect_to_language_page(video, lang, lang_id, version_id)
     if request.is_ajax():
-        context = ContextClass(request, video, lang, lang_id, version_id,
-                               tab_only=True)
+        context = LanguagePageContext(request, video, lang, lang_id,
+                                      version_id, tab, tab_only=True)
         template_name = 'videos/language-%s-tab.html' % tab
     else:
         template_name = 'videos/language-%s.html' % tab
-        context = ContextClass(request, video, lang, lang_id, version_id)
+        context = LanguagePageContext(request, video, lang, lang_id,
+                                      version_id, tab)
         context['tab'] = tab
         if 'tab' not in request.GET:
             # we only want to update the view counter if this request wasn't

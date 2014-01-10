@@ -1793,6 +1793,24 @@ body.account {
                 margin-bottom: 1em;
             }
         }
+
+        #collaboration-tab {
+            padding-top: 1em;
+
+            .editor-link {
+                padding: 0;
+
+                a.button, button {
+                    float: right;
+                    margin: 0;
+                }
+            }
+
+            h2 {
+                text-align: center;
+                margin-bottom: 1em;
+            }
+        }
     }
 
     span.unisubs-tabTextfinish {

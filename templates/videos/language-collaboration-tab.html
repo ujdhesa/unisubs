@@ -1,0 +1,32 @@
+{% load i18n %}
+<div class="tab" id="collaboration-tab">
+    {% if not collaboration.is_complete %}
+    <div class="editor-link">
+        {% if user_is_collaborator %}
+            <a href="{{ collaboration.get_editor_url }}" class="edit-collaboration button">{% trans 'Edit Collaboration' %}</a>
+        {% elif user_can_join %}
+            {% include 'teams/_join-collaboration-button.html' %}
+        {% endif %}
+    </div>
+    {% endif %}
+    <h2>
+        {{ collaboration.get_state_display }}
+    </h2>
+
+    <table class="collaborators">
+        <thead>
+            <tr>
+                <td>{% trans 'User' %}</td>
+                <td>{% trans 'Role' %}</td>
+                <td class="last">{% trans 'Endorsed?' %}</td>
+            </tr>
+        </thead>
+        {% for collaborator in collaborators %}
+        <tr>
+            <td>{{ collaborator.user }}</td>
+            <td>{{ collaborator.get_role_display }}</td>
+            <td class="last">{% if collaborator.endorsed %}&#x2713;{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>

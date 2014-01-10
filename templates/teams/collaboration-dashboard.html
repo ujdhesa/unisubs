@@ -34,7 +34,7 @@
                 <td>{{ collaborator.get_role_display }} </td>
                 <td>{% if collaborator.endorsed %}&#10004;{% endif %}
                 <td>{{ collaboration.get_state_display }}</td>
-                <td><a class="button" href="{{ collaborator.edit_url }}">{% trans "Edit Subtitles" %}</a></td>
+                <td><a class="button" href="{{ collaboration.get_editor_url }}">{% trans "Edit Subtitles" %}</a></td>
             </tr>
             {% endfor %}
         </table>
@@ -49,12 +49,7 @@
                 <td>{{ collaboration.get_language_code_display }} </td>
                 <td>{{ collaboration.get_state_display }} </td>
                 <td>
-                    <form action="{{ collaboration.get_absolute_url }}" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="team" value="{{ team.slug }}">
-                        <input type="hidden" name="action" value="join">
-                        <button>{{ collaboration.join_label }}</button>
-                    </form>
+                    {% include 'teams/_join-collaboration-button.html' %}
                 </td>
             </tr>
             {% endfor %}

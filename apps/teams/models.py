@@ -2470,6 +2470,13 @@ class Collaboration(models.Model):
         return reverse('teams:collaboration', kwargs={
             'collaboration_id': self.id})
 
+    def get_editor_url(self):
+        url = reverse('subtitles:subtitle-editor', kwargs={
+            'video_id': self.video.video_id,
+            'language_code': self.language_code
+        })
+        return "%s?collaboration_id=%s" % (url, self.id)
+
     def get_state_name(self):
         """Get a machine-friendly name for our state."""
         if self.state == Collaboration.NEEDS_SUBTITLER:
@@ -2703,16 +2710,6 @@ class Collaborator(models.Model):
     def mark_endorsed(self):
         self.endorsement_date = Collaborator.now()
         self.save()
-
-    def edit_url(self):
-        url = reverse('subtitles:subtitle-editor', kwargs={
-            'video_id': self.collaboration.video.video_id,
-            'language_code': self.collaboration.language_code
-        })
-        if self.endorsed:
-            return url
-        else:
-            return "%s?collaboration_id=%s" % (url, self.collaboration_id)
 
 class CollaborationNote(models.Model):
     """Note added to a collaboration."""

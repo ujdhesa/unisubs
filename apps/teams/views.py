@@ -1333,12 +1333,14 @@ def collaboration(request, collaboration_id):
         return redirect(video_url)
 
     if request.POST.get('action') == 'join':
-        try:
-            member = request.user.team_members.get(
-                team__slug=request.POST.get('team'))
-        except TeamMember.DoesNotExist:
+        if 'team' in request.POST:
+            team = Team.objects.get(slug=request.POST['team'])
+        elif collaboration.team is not None:
+            team = collaboration.team
+        else:
             return redirect(video_url)
-        if not collaboration.can_join(member):
+        member = team.get_member(request.user)
+        if member is None or not collaboration.can_join(member):
             return redirect(video_url)
         collaboration.join(member)
         url = reverse('subtitles:subtitle-editor', kwargs={

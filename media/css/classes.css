@@ -470,4 +470,5 @@ clear: both !important;;
 
 h2.main-title {
   padding-bottom: .5em;
+  overflow: hidden;
 }

@@ -101,6 +101,9 @@
             <li class="{% if tab == 'subtitles' %}current{% endif %}" id="subtitles-tab-header"><a href="?tab=subtitles">{% trans "Subtitles" %}</a></li>
             <li class="hascount{% if tab == 'comments' %} current{% endif %}" id="comments-tab-header"><a href="?tab=comments">{% trans "Comments" %}<span>{{ language|get_comment_count }}</span></a></li>
             <li class="hascount{% if tab == 'revisions' %} current{% endif %}" id="revisions-tab-header"><a href="?tab=revisions">{% trans "Revisions" %}<span>{{ revision_count }}</span></a></li>
+            {% if show_collaboration_tab %}
+            <li class="{% if tab == 'collaboration' %}current{% endif %}" id="collaboration-tab-header"><a href="?tab=collaboration">{% trans "Collaboration" %}</a></li>
+            {% endif %}
             {% if video.get_team_video and user.is_staff %}
             <li class="{% if tab == 'sync-history' %}current{% endif %}" id="sync-history-tab-header"><a href="?tab=sync-history">{% trans "Sync History" %}</a></li>
             {% endif %}
