@@ -10,6 +10,7 @@
             'sendBackTask',
             'addCollaborationNote',
             'endorseCollaboration',
+            'removeEndorsement',
         ];
 
         var deferreds = {};

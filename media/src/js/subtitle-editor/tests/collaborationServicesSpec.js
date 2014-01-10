@@ -25,15 +25,17 @@ describe('Test the collaboration service', function() {
     });
     beforeEach(inject(function($http, $injector, EditorData) {
         $httpBackend = $injector.get('$httpBackend');
-        CollaborationStorage = $injector.get('CollaborationStorage');
         EditorData.authHeaders = authHeaders;
         EditorData.team_slug = teamSlug;
         EditorData.task_id = taskID;
+        EditorData.video.id = videoId;
+        EditorData.editingVersion.languageCode = languageCode;
         EditorData.username = username;
         // make the $http service not add extra headers to the requests.
         $http.defaults.headers.common = {};
         $http.defaults.headers.post = {};
         $http.defaults.headers.put = {};
+        CollaborationStorage = $injector.get('CollaborationStorage');
     }));
 
     it('Can approve tasks', function() {
@@ -67,13 +69,13 @@ describe('Test the collaboration service', function() {
 
     it('Can mark subtitles as endorsed', function() {
         $httpBackend.expectPOST(endorsementResourceUrl, {}, authHeaders).respond(201, '');
-        CollaborationStorage.endorseCollaboration(videoId, languageCode);
+        CollaborationStorage.endorseCollaboration();
         $httpBackend.verifyNoOutstandingExpectation();
     });
 
     it('Can remove endorsements', function() {
         $httpBackend.expectPUT(removeEndorsementResourceUrl, {'remove': true}, authHeaders).respond(202, '');
-        CollaborationStorage.removeEndorsement(videoId, languageCode);
+        CollaborationStorage.removeEndorsement();
         $httpBackend.verifyNoOutstandingExpectation();
     });
 
@@ -98,7 +100,7 @@ describe('Test the collaboration service', function() {
 
         $httpBackend.expectGET(url, authHeaders)
             .respond(200, noteData);
-        CollaborationStorage.getCollaborationNotes(videoId, languageCode)
+        CollaborationStorage.getCollaborationNotes()
             .then(function(responseData) {
             // CollaborationStorage should return the JSON data sent back from
             // the server.
@@ -119,7 +121,7 @@ describe('Test the collaboration service', function() {
 
         $httpBackend.expectPOST(url, {'text': 'note text'}, authHeaders)
             .respond(201, noteResponse);
-        CollaborationStorage.addCollaborationNote(videoId, languageCode, 'note text')
+        CollaborationStorage.addCollaborationNote('note text')
             .then(function(responseData) {
             // CollaborationStorage should return the JSON data sent back from
             // the server.

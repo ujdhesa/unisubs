@@ -54,36 +54,38 @@
     });
 
     module.factory('CollaborationStorage', function($http, AuthHeaders, EditorData) {
-        function getTaskSaveAPIUrl(teamSlug, taskID) {
-            return '/api2/partners/teams/' + teamSlug + '/tasks/' +
+        var videoId = EditorData.video.id;
+        var languageCode = EditorData.editingVersion.languageCode;
+        var teamSlug = EditorData.team_slug;
+        var taskID = EditorData.task_id;
+        var username = EditorData.username;
+
+        function getTaskSaveAPIUrl() {
+            return '/api2/partners/teams/' + teamSlug + '/tasks/' + 
                 taskID + '/';
         };
 
-        function getEndorseAPIUrl(videoId, languageCode) {
-            return '/api2/partners/videos/' + videoId +
-                '/languages/' + languageCode + '/endorsements/';
+        function getEndorseAPIUrl() {
+            return '/api2/partners/videos/' + videoId + '/languages/' +
+                languageCode + '/endorsements/';
         };
 
-        function getRemoveEndorseAPIUrl(videoId, languageCode) {
+        function getRemoveEndorseAPIUrl() {
             return '/api2/partners/videos/' + videoId +
                 '/languages/' + languageCode + '/endorsements/' +
-                EditorData.username + '/';
+                username + '/';
         };
 
-        function getCollaborationNotesAPIUrl(videoId, languageCode) {
+        function getCollaborationNotesAPIUrl() {
             return '/api2/partners/videos/' + videoId +
                 '/languages/' + languageCode + '/collaboration/notes/';
         };
 
         return {
             approveTask: function(versionNumber, notes) {
-
-                var url = getTaskSaveAPIUrl(EditorData.team_slug,
-                        EditorData.task_id);
-
                 var promise = $http({
                     method: 'PUT',
-                    url: url,
+                    url: getTaskSaveAPIUrl(),
                     headers: AuthHeaders.headers(),
                     data:  {
                         complete: true,
@@ -96,13 +98,9 @@
 
             },
             sendBackTask: function(versionNumber, notes) {
-
-                var url = getTaskSaveAPIUrl(EditorData.team_slug,
-                        EditorData.task_id);
-
                 var promise = $http({
                     method: 'PUT',
-                    url: url,
+                    url: getTaskSaveAPIUrl(),
                     headers: AuthHeaders.headers(),
                     data:  {
                         complete: true,
@@ -116,12 +114,9 @@
 
             },
             updateTaskNotes: function(notes) {
-                var url = getTaskSaveAPIUrl(EditorData.team_slug,
-                        EditorData.task_id);
-
                 var promise = $http({
                     method: 'PUT',
-                    url: url,
+                    url: getTaskSaveAPIUrl(),
                     headers: AuthHeaders.headers(),
                     data:  {
                         body: notes,
@@ -130,15 +125,14 @@
 
                 return promise;
             },
-            endorseCollaboration: function(videoId, languageCode) {
-                var url = getEndorseAPIUrl(videoId, languageCode);
+            endorseCollaboration: function() {
                 // To endorse the collaboration we post to the endorsements
                 // URL.  We don't need to send any data, the only thing that's
                 // important is the user endorsing it and that's already
                 // specified by the auth headers.
                 var promise = $http({
                     method: 'POST',
-                    url: url,
+                    url: getEndorseAPIUrl(),
                     headers: AuthHeaders.headers(),
                     data:  {},
                 });
@@ -146,34 +140,33 @@
                 return promise;
 
             },
-            removeEndorsement: function(videoId, languageCode) {
-                var url = getRemoveEndorseAPIUrl(videoId, languageCode);
+            removeEndorsement: function() {
                 // To endorse the collaboration we post to the endorsements
                 // URL.  We don't need to send any data, the only thing that's
                 // important is the user endorsing it and that's already
                 // specified by the auth headers.
                 var promise = $http({
                     method: 'PUT',
-                    url: url,
+                    url: getRemoveEndorseAPIUrl(),
                     headers: AuthHeaders.headers(),
                     data: { 'remove': true },
                 });
 
                 return promise;
             },
-            getCollaborationNotes: function(videoId, languageCode) {
+            getCollaborationNotes: function() {
                 return $http({
                     method: 'GET',
-                    url: getCollaborationNotesAPIUrl(videoId, languageCode),
+                    url: getCollaborationNotesAPIUrl(),
                     headers: AuthHeaders.headers()
                 }).then(function(result) {
                     return result.data;
                 });
             },
-            addCollaborationNote: function(videoId, languageCode, text) {
+            addCollaborationNote: function(text) {
                 return $http({
                     method: 'POST',
-                    url: getCollaborationNotesAPIUrl(videoId, languageCode),
+                    url: getCollaborationNotesAPIUrl(),
                     data: {'text': text},
                     headers: AuthHeaders.headers()
                 }).then(function(result) {
@@ -274,13 +267,12 @@
         }
 
         CollaborationManager.prototype.endorseCollaboration = function() {
-            return CollaborationStorage.endorseCollaboration(this.videoId, this.languageCode);
+            return CollaborationStorage.endorseCollaboration();
         }
 
         CollaborationManager.prototype.removeEndorsement = function() {
             var that = this;
-            return CollaborationStorage.removeEndorsement(this.videoId,
-                    this.languageCode).then(function onSuccess() {
+            return CollaborationStorage.removeEndorsement().then(function onSuccess() {
                 that.buttonMode = 'collab';
             });
         }

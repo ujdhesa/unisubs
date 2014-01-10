@@ -233,7 +233,13 @@ describe('Test the CollaborationManager class', function() {
     it('Can endorse collaborations', function() {
         var collab = makeCollaborationManagerCollab();
         collab.endorseCollaboration();
-        expect(CollaborationStorage.endorseCollaboration).toHaveBeenCalledWith(videoId, languageCode);
+        expect(CollaborationStorage.endorseCollaboration).toHaveBeenCalledWith();
+    });
+
+    it('Can remove endorsements', function() {
+        var collab = makeCollaborationManagerCollab();
+        collab.removeEndorsement();
+        expect(CollaborationStorage.removeEndorsement).toHaveBeenCalledWith();
     });
 
     it('Should enable the save button when the notes are changed in tasks mode', function() {
