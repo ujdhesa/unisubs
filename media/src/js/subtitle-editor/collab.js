@@ -31,11 +31,14 @@
         $scope.approve = function() {
             $scope.$root.$emit('approve-task');
         };
+        $scope.sendBack = function() {
+            $scope.$root.$emit('send-back-task');
+        };
         $scope.endorse = function() {
             $scope.$root.$emit('endorse-collaboration');
         };
-        $scope.sendBack = function() {
-            $scope.$root.$emit('send-back-task');
+        $scope.removeEndorsement = function() {
+            $scope.collab.removeEndorsement();
         };
         $scope.addNote = function() {
             $scope.collab.saveNote();
@@ -59,6 +62,12 @@
         function getEndorseAPIUrl(videoId, languageCode) {
             return '/api2/partners/videos/' + videoId +
                 '/languages/' + languageCode + '/endorsements/';
+        };
+
+        function getRemoveEndorseAPIUrl(videoId, languageCode) {
+            return '/api2/partners/videos/' + videoId +
+                '/languages/' + languageCode + '/endorsements/' +
+                EditorData.username + '/';
         };
 
         function getCollaborationNotesAPIUrl(videoId, languageCode) {
@@ -122,7 +131,6 @@
                 return promise;
             },
             endorseCollaboration: function(videoId, languageCode) {
-
                 var url = getEndorseAPIUrl(videoId, languageCode);
                 // To endorse the collaboration we post to the endorsements
                 // URL.  We don't need to send any data, the only thing that's
@@ -137,6 +145,21 @@
 
                 return promise;
 
+            },
+            removeEndorsement: function(videoId, languageCode) {
+                var url = getRemoveEndorseAPIUrl(videoId, languageCode);
+                // To endorse the collaboration we post to the endorsements
+                // URL.  We don't need to send any data, the only thing that's
+                // important is the user endorsing it and that's already
+                // specified by the auth headers.
+                var promise = $http({
+                    method: 'PUT',
+                    url: url,
+                    headers: AuthHeaders.headers(),
+                    data: { 'remove': true },
+                });
+
+                return promise;
             },
             getCollaborationNotes: function(videoId, languageCode) {
                 return $http({
@@ -168,11 +191,17 @@
             if (EditorData.task_needs_pane) {
                 this.enabled = true;
                 this.mode = 'tasks';
+                this.buttonMode = 'tasks';
                 this.savedNote = this.currentNote;
-            } else if (EditorData.collaboration_id &&
-                    EditorData.collaboration_state != 'being-subtitled') {
+            } else if (EditorData.collaborationID &&
+                    EditorData.collaborationState != 'being-subtitled') {
                 this.enabled = true;
                 this.mode = 'collab';
+                if(EditorData.collaborationEndorsedByUser) {
+                    this.buttonMode = 'collab-endorsed';
+                } else {
+                    this.buttonMode = 'collab';
+                }
                 this.collaborators = EditorData.collaborators;
                 this.notes = EditorData.collaborationNotes;
             } else {
@@ -246,6 +275,14 @@
 
         CollaborationManager.prototype.endorseCollaboration = function() {
             return CollaborationStorage.endorseCollaboration(this.videoId, this.languageCode);
+        }
+
+        CollaborationManager.prototype.removeEndorsement = function() {
+            var that = this;
+            return CollaborationStorage.removeEndorsement(this.videoId,
+                    this.languageCode).then(function onSuccess() {
+                that.buttonMode = 'collab';
+            });
         }
 
         CollaborationManager.prototype.enableSaveButton = function() {

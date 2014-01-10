@@ -2616,20 +2616,7 @@ class Collaboration(models.Model):
         :param collaborator: Collaborator object for the team member.  If this
         is passed in, it saves us a DB query.
         """
-        try:
-            if isinstance(team_member, TeamMember):
-                user = team_member.user
-            else:
-                user = team_member
-            if collaborator is None:
-                collaborator = self.collaborators.get(user=user)
-            else:
-                if collaborator.user != user:
-                    raise ValueError("Invalid collaborator: %s" %
-                                     collaborator)
-        except Collaborator.DoesNotExist:
-            raise PermissionDenied(_(
-                "You are not part of the collaboration for this video"))
+        collaborator = self._fetch_collaborator(team_member, collaborator)
         collaborator.mark_endorsed()
         # Check if the endorsement changes our state
         new_state = None
@@ -2653,6 +2640,33 @@ class Collaboration(models.Model):
             self.save()
             if new_state == Collaboration.COMPLETE:
                 self.collaborators.update(complete=True)
+
+    def remove_endorsement(self, team_member, collaborator=None):
+        """Remove an endorsement that was given by a member."""
+        # first check that the member is actually a collaborator for this
+        collaborator = self._fetch_collaborator(team_member, collaborator)
+        # next remove all endorsements
+        self.collaborators.update(endorsement_date=None)
+        # finally, set our stage back to being subtitles
+        self.state = self.BEING_SUBTITLED
+        self.save()
+
+    def _fetch_collaborator(self, team_member, collaborator):
+        """Get the Collaborator for mark_endorsed and remove_endorsement
+        """
+        if isinstance(team_member, TeamMember):
+            user = team_member.user
+        else:
+            user = team_member
+        if collaborator is None:
+            try:
+                collaborator = self.collaborators.get(user=user)
+            except Collaborator.DoesNotExist:
+                raise PermissionDenied(_(
+                    "You are not part of the collaboration for this video"))
+        elif collaborator.user != user:
+            raise ValueError("Invalid collaborator: %s" % collaborator)
+        return collaborator
 
     def add_note(self, member, text):
         """Add a new note to this collaboration

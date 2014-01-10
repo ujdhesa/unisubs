@@ -261,6 +261,7 @@ def subtitle_editor(request, video_id, language_code):
             'x-api-username': request.user.username,
             'x-apikey': request.user.get_api_key()
         },
+        'username': request.user.username,
         'video': {
             'id': video.video_id,
             'title': video.title,
@@ -293,8 +294,8 @@ def subtitle_editor(request, video_id, language_code):
 
     if collaborator:
         collaboration = collaborator.collaboration
-        editor_data['collaboration_id'] = collaboration.id
-        editor_data['collaboration_state'] = collaboration.get_state_name()
+        editor_data['collaborationID'] = collaboration.id
+        editor_data['collaborationState'] = collaboration.get_state_name()
         editor_data['collaborators'] = [
             unicode(collaborator.user)
             for collaborator in collaboration.collaborators.all()
@@ -308,6 +309,7 @@ def subtitle_editor(request, video_id, language_code):
             }
             for note in collaboration.notes.all()
         ]
+        editor_data['collaborationEndorsedByUser'] = collaborator.endorsed
 
     return render_to_response("subtitles/subtitle-editor.html", {
         'video': video,

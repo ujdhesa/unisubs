@@ -19,42 +19,45 @@ describe('Test the CollaborationManager class', function() {
         EditorData.editingVersion.languageCode = languageCode;
     }));
 
-    function makeCollaborationManager(editorDataToSet) {
+    function makeCollaborationManager(editorData) {
         var keysToClear = [
             'task_id',
             'task_needs_pane',
-            'collaboration_id',
-            'collaboration_state',
+            'collaborationID',
+            'collaborationState',
             'collaborationNotes',
             'collaborators'
         ];
         _.each(keysToClear, function(key) {
             EditorData[key] = undefined;
         });
-        _.each(_.keys(editorDataToSet), function(key) {
-            EditorData[key] = editorDataToSet[key];
+        _.each(_.keys(editorData), function(key) {
+            EditorData[key] = editorData[key];
         });
         return new CollaborationManager();
     }
 
-    function makeCollaborationManagerTasks() {
-        return makeCollaborationManager({
+    function makeCollaborationManagerTasks(editorData) {
+        if(editorData === undefined) editorData = {};
+        return makeCollaborationManager(_.defaults(editorData, {
             task_id: 123,
             task_needs_pane: true
-        });
+        }));
     }
 
-    function makeCollaborationManagerCollab() {
-        return makeCollaborationManager({
-            collaboration_id: 123,
-            collaboration_state: 'being-reviewed',
+    function makeCollaborationManagerCollab(editorData) {
+        if(editorData === undefined) editorData = {};
+        return makeCollaborationManager(_.defaults(editorData, {
+            collaborationID: 123,
+            collaborationState: 'being-reviewed',
             collaborators: [],
             collaborationNotes: [],
-        });
+            collaborationEndorsedByUser: false
+        }));
     }
 
-    function checkCollaborationManagerState(mode) {
-        var collab = new CollaborationManager();
+    function checkCollaborationManagerState(mode, editorData) {
+        var collab = makeCollaborationManager(editorData);
         if(mode === null) {
             expect(collab.enabled).toBe(false);
         } else {
@@ -64,37 +67,60 @@ describe('Test the CollaborationManager class', function() {
     }
 
     it('is disabled if neither tasks nor collaborations are active', function() {
-        // If neither task_id nor collaboration_id is present, the mode
+        // If neither task_id nor collaborationID is present, the mode
         // should be null.
-        checkCollaborationManagerState(null);
+        checkCollaborationManagerState(null, {});
     });
 
     it('is enabled when a task is active if task_needs_pane is true', function() {
-        EditorData.task_id = 123;
-        EditorData.task_needs_pane = false;
-        checkCollaborationManagerState(null);
+        checkCollaborationManagerState(null, {
+            task_id: 123,
+            task_needs_pane: false
+        });
 
-        EditorData.task_needs_pane = true;
-        checkCollaborationManagerState('tasks');
+        checkCollaborationManagerState('tasks', {
+            task_id: 123,
+            task_needs_pane: true
+        });
     });
 
     if('is enabled when a collaboration is active and we are in the review or approve stage', function() {
-        EditorData.collaboration = 123;
-        EditorData.collaboration_state = 'being-subtitled';
-        checkCollaborationManagerState(null);
+        checkCollaborationManagerState(null, {
+            collaborationState: 'being-subtitled',
+            collaborationID: 123
+        });
 
-        EditorData.collaboration_state = 'being-reviewed';
-        checkCollaborationManagerState('collab');
+        checkCollaborationManagerState('collab', {
+            collaborationState: 'being-reviewed',
+            collaborationID: 123
+        });
 
-        EditorData.collaboration_state = 'being-approved';
-        checkCollaborationManagerState('collab');
+        checkCollaborationManagerState('collab', {
+            collaborationState: 'being-approved',
+            collaborationID: 123
+        });
+    });
+
+    if('switches buttonMode depending on the EditorData passed in', function() {
+        var collab = makeCollaborationManagerTasks();
+        expect(collab.buttonMode).toEqual('tasks');
+
+        collab = makeCollaborationManagerCollab({
+            collaborationEndorsedByUser: false
+        });
+        expect(collab.buttonMode).toEqual('collab');
+
+        collab = makeCollaborationManagerCollab({
+            collaborationEndorsedByUser: true
+        });
+        expect(collab.buttonMode).toEqual('collab-endorsed');
     });
 
     it('Fetches the collaborators', function() {
         var collaborators = [ 'alice', 'bob' ];
         var collab = makeCollaborationManager({
-            collaboration_id: 123,
-            collaboration_state: 'being-reviewed',
+            collaborationID: 123,
+            collaborationState: 'being-reviewed',
             collaborators: collaborators
         });
         expect(collab.collaborators).toEqual(collaborators);
@@ -102,15 +128,15 @@ describe('Test the CollaborationManager class', function() {
 
     it('Fetches the initial note', function() {
         var collab = makeCollaborationManager({
-            collaboration_id: 123,
-            collaboration_state: 'being-reviewed',
+            collaborationID: 123,
+            collaborationState: 'being-reviewed',
             savedNotes: 'my note'
         });
         expect(collab.currentNote).toEqual('my note');
         // default to an empty string if savedNotes is not present
         var collab = makeCollaborationManager({
-            collaboration_id: 123,
-            collaboration_state: 'being-reviewed',
+            collaborationID: 123,
+            collaborationState: 'being-reviewed',
             savedNotes: undefined
         });
         expect(collab.currentNote).toEqual('');
@@ -133,8 +159,8 @@ describe('Test the CollaborationManager class', function() {
         ];
 
         var collab = makeCollaborationManager({
-            collaboration_id: 123,
-            collaboration_state: 'being-reviewed',
+            collaborationID: 123,
+            collaborationState: 'being-reviewed',
             collaborators: [],
             collaborationNotes: noteData
         });

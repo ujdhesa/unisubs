@@ -347,6 +347,30 @@ class EndorseCollaborationTest(CollaborationTestCase):
         collaboration.mark_endorsed(self.member1.user)
         self.assertEquals(collaboration.state, Collaboration.NEEDS_REVIEWER)
 
+    def test_remove_endorsement(self):
+        collaboration = self.make_collaboration()
+        collaborator = collaboration.join(self.member1)
+        collaboration.mark_endorsed(self.member1)
+        # test a member removing their endorsement
+        collaboration.remove_endorsement(self.member1)
+        self.assertEquals(collaborator.endorsed, False)
+        self.assertEquals(collaboration.state, Collaboration.BEING_SUBTITLED)
+        # member1 should be able to re-endorse at this point
+        collaboration.mark_endorsed(self.member1)
+        self.assertEquals(reload_model(collaborator).endorsed, True)
+        self.assertEquals(collaboration.state, Collaboration.NEEDS_REVIEWER)
+        # if the reviewer remove their endorsement, then it should remove all
+        # other endorsements as well
+        collaboration.join(self.member2)
+        collaboration.mark_endorsed(self.member2)
+        self.assertEquals(collaboration.state, Collaboration.NEEDS_APPROVER)
+        collaboration.remove_endorsement(self.member2)
+        self.assertEquals(collaboration.state, Collaboration.BEING_SUBTITLED)
+        # users who aren't part of the collaboration shouldn't be able to
+        # remove the endorsements
+        self.assertRaises(PermissionDenied, collaboration.remove_endorsement,
+                          self.member3)
+
 class CollaborationManagerDashboardTestCase(CollaborationTestCase):
     def setUp(self):
         CollaborationTestCase.setUp(self)

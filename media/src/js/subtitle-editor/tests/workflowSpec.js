@@ -134,7 +134,7 @@ describe('WorkflowProgressionController', function() {
         }));
 
         it('endorses a collaboration if we have one', inject(function(EditorData) {
-            EditorData.collaboration_id = 123
+            EditorData.collaborationID = 123
 
             expect($scope.$emit).not.toHaveBeenCalled();
             $scope.endorse();

@@ -5,10 +5,13 @@ describe('Test the collaboration service', function() {
     var teamSlug = 'my-team';
     var taskID = 123;
     var versionNumber = 1;
+    var username = 'ben';
     var collaborationNotesUrl = ('/api2/partners/videos/' + videoId +
         '/languages/' + languageCode + '/collaboration/notes/');
     var endorsementResourceUrl = ('/api2/partners/videos/' + videoId +
         '/languages/' + languageCode + '/endorsements/');
+    var removeEndorsementResourceUrl = ('/api2/partners/videos/' + videoId +
+        '/languages/' + languageCode + '/endorsements/ben/');
     var taskSaveUrl = ('/api2/partners/teams/' + teamSlug + '/tasks/' +
         taskID + '/');
     var authHeaders = {
@@ -26,6 +29,7 @@ describe('Test the collaboration service', function() {
         EditorData.authHeaders = authHeaders;
         EditorData.team_slug = teamSlug;
         EditorData.task_id = taskID;
+        EditorData.username = username;
         // make the $http service not add extra headers to the requests.
         $http.defaults.headers.common = {};
         $http.defaults.headers.post = {};
@@ -64,6 +68,12 @@ describe('Test the collaboration service', function() {
     it('Can mark subtitles as endorsed', function() {
         $httpBackend.expectPOST(endorsementResourceUrl, {}, authHeaders).respond(201, '');
         CollaborationStorage.endorseCollaboration(videoId, languageCode);
+        $httpBackend.verifyNoOutstandingExpectation();
+    });
+
+    it('Can remove endorsements', function() {
+        $httpBackend.expectPUT(removeEndorsementResourceUrl, {'remove': true}, authHeaders).respond(202, '');
+        CollaborationStorage.removeEndorsement(videoId, languageCode);
         $httpBackend.verifyNoOutstandingExpectation();
     });
 

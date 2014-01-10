@@ -386,13 +386,16 @@ what is supported, check out tests/subtitleRepeatDirective.spec.
                         <textarea ng-model="collab.currentNote"></textarea>
                         <button ng-show="collab.mode != 'tasks'" class="add-note" ng-click="addNote()">Add Note</button>
                     </div>
-                    <ng-switch on="collab.mode">
+                    <ng-switch on="collab.buttonMode">
                         <div class="buttons" ng-switch-when="tasks">
                                 <button class="send-back" ng-click="sendBack()">Send Back</button>
                                 <button class="approve" ng-click="approve()">Accept</button>
                         </div>
                         <div class="buttons" ng-switch-when="collab">
                             <button class="endorse" ng-disabled="endorseDisabled()" ng-click="endorse()">Endorse</button>
+                        </div>
+                        <div class="buttons" ng-switch-when="collab-endorsed">
+                            <button class="send-back" ng-click="removeEndorsement()">Remove endorsement</button>
                         </div>
                     </ng-switch>
                 </div>
