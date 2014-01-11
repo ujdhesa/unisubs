@@ -38,13 +38,11 @@ class TestCaseVideoResource(WebdriverTestCase):
             name='team project one',
             slug = 'team-project-one',
             description = 'subtitle project number 1',
-            guidelines = 'do a good job',
-            workflow_enabled=False)
+            guidelines = 'do a good job')
         
         cls.project2 = TeamProjectFactory(
             team=cls.open_team,
-            name='team project two',
-            workflow_enabled=True)
+            name='team project two')
         cls.video_pg = video_page.VideoPage(cls)
         cls.watch_pg = watch_page.WatchPage(cls)
 

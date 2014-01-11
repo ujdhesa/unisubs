@@ -43,13 +43,11 @@ class TestCaseTeamProjectResource(WebdriverTestCase):
             name='team project one',
             slug = 'team-project-one',
             description = 'subtitle project number 1',
-            guidelines = 'do a good job',
-            workflow_enabled=False)
+            guidelines = 'do a good job')
         
         cls.project2 = TeamProjectFactory(
             team=cls.open_team,
-            name='team project two',
-            workflow_enabled=True)
+            name='team project two')
 
         cls.team_pg = ATeamPage(cls)
         cls.team_pg.open_team_page(cls.open_team.slug)
@@ -82,7 +80,7 @@ class TestCaseTeamProjectResource(WebdriverTestCase):
                           'guidelines': 'do a good job',
                           'name': 'team project one',
                           'slug': 'team-project-one',
-                          'workflow_enabled': False }
+                        }
 
         url_part = 'teams/{0}/projects/{1}/'.format(self.open_team.slug,
             self.project1.slug)

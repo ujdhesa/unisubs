@@ -53,7 +53,7 @@ class TestCaseTeamTaskResource(WebdriverTestCase):
 
     @classmethod
     def create_workflow_team(cls):
-        team = TeamMemberFactory.create(team__workflow_enabled=True,
+        team = TeamMemberFactory.create(team__workflow_style='T',
                                             team__translate_policy=20, #any team
                                             team__subtitle_policy=20, #any team
                                             team__task_assign_policy=10, #any team

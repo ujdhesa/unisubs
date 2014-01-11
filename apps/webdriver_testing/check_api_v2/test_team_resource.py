@@ -2,13 +2,13 @@ import os
 import time
 import itertools
 import operator
-from apps.webdriver_testing.webdriver_base import WebdriverTestCase
-from apps.webdriver_testing.data_factories import UserFactory
-from apps.webdriver_testing.data_factories import TeamMemberFactory
+from webdriver_testing.webdriver_base import WebdriverTestCase
+from webdriver_testing.data_factories import UserFactory
+from webdriver_testing.data_factories import TeamMemberFactory
 
-from apps.webdriver_testing.data_factories import TeamVideoFactory
-from apps.webdriver_testing import data_helpers
-from apps.webdriver_testing.pages.site_pages.teams_dir_page import TeamsDirPage
+from webdriver_testing.data_factories import TeamVideoFactory
+from webdriver_testing import data_helpers
+from webdriver_testing.pages.site_pages.teams_dir_page import TeamsDirPage
 
 class TestCaseTeamsResource(WebdriverTestCase):
     """TestSuite for getting and modifying video urls via api_v2.  """
@@ -84,7 +84,7 @@ class TestCaseTeamsResource(WebdriverTestCase):
             teams_list.append(k)
         self.assertEqual(expected_teams, teams_list)
 
-    def test_list__private(self):
+    def test_list_private(self):
         """Private teams are displayed when the requestor is a member of the team.
 
         """
@@ -120,7 +120,6 @@ class TestCaseTeamsResource(WebdriverTestCase):
             'deleted': False, 
             'task_assign_policy': 'Any team member', 
             'task_expiration': None, 
-            'workflow_enabled': False, 
             'header_html_text': '', 
             'membership_policy': 'Open', 
             'video_policy': 'Any team member', 
@@ -129,7 +128,8 @@ class TestCaseTeamsResource(WebdriverTestCase):
             'resource_uri': '/api2/partners/teams/a1-waay-cool-team/', 
             'slug': 'a1-waay-cool-team', 
             'max_tasks_per_member': None, 
-            'name': 'A1 Waay Cool team'
+            'name': 'A1 Waay Cool team', 
+            'workflow_style': 'D',
             } 
 
         url_part = 'teams/%s/' %self.open_team.slug
