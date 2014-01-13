@@ -755,7 +755,6 @@ MEDIA_BUNDLES = {
               "js/jquery.mod.js",
               "js/jquery.rpc.js",
               "js/jquery.main.js",
-              "js/jquery-1.10.2.min.js",
               "js/jquery.input_replacement.min.js",
               "js/messages.js",
               "js/escape.js",
