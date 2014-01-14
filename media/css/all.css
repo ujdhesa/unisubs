@@ -48,7 +48,7 @@ body {
 	margin: 0;
 	color: #000;
 	min-width:1280px;
-	font: 18px/30px 'ubuntulight' ,"times new roman", times, serif;
+	font: 18px/30px 'ubuntulight' ,Arial, Helvetica, sans-serif;
 }
 /* General reset */
 form, fieldset {
@@ -97,7 +97,7 @@ a:hover {
 .btn-red{
 	display:inline-block;
 	vertical-align:top;
-	font-family:'ubuntumedium' ,"times new roman", times, serif;
+	font-family:'ubuntumedium', Arial, Helvetica, sans-serif;
 	text-transform:uppercase;
 	color:#fff;
 	text-decoration:none;
@@ -133,7 +133,7 @@ a:hover {
 	border-color:#c1c1c1 #d3d3d3 #e7e7e7;
 	margin:0 0 10px;
 	padding:10px 10px 8px;
-	font-family:'ubuntulight' ,"times new roman", times, serif;
+	font-family:'ubuntulight', Arial, Helvetica, sans-serif;
 	font-size:16px;
 	line-height:22px;
 	-webkit-border-radius: 4px;
@@ -197,7 +197,7 @@ a:hover {
 	line-height:18px;
 	color:#000;
 	text-decoration:none;
-	font-family:'ubuntulight' ,"times new roman", times, serif;
+	font-family:'ubuntulight', Arial, Helvetica, sans-serif;
 }
 #header .menu-top li a:hover{
 	text-decoration:underline;
@@ -414,7 +414,7 @@ a:hover {
 	-webkit-box-shadow: #f1f2f2 0 2px 0;
 	-moz-box-shadow: #f1f2f2 0 2px 0;
 	box-shadow: #f1f2f2 0 2px 0;
-	background:#fff;
+	background:#f1f7fa;
 }
 #nav .menu{
 	margin:0;
@@ -434,7 +434,7 @@ a:hover {
 #nav .menu li a{
 	font-size:18px;
 	line-height:23px;
-	font-family:'ubuntulight',"times new roman", times, serif;
+	font-family:'ubuntulight', Arial, Helvetica, sans-serif;
 	color:#4b4b4b;
 	text-decoration:none;
 }
