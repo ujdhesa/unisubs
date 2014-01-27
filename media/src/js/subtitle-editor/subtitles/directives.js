@@ -462,6 +462,13 @@ var USER_IDLE_MINUTES = 15;
                 });
             }
         }
+    }).filter("decode",function() {
+        return function(str) {
+            var el = document.createElement("div");
+            el.innerHTML = str;
+            str =   el.textContent || el.innerText;
+            return str;
+        }
     });
 
     module.directive('languageSelector', function(SubtitleStorage) {

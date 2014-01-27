@@ -164,7 +164,7 @@ subtitle-repeat directive, see the working subtitles for more info
                             <span class="new-paragraph">
                               ¶
                             </span>
-                            <span class="subtitle-text">[[ subtitle.content() ]]</span>
+                            <span class="subtitle-text">[[ subtitle.content() | decode ]]</span>
                         </li>
 
                     </ul>
@@ -310,7 +310,7 @@ what is supported, check out tests/subtitleRepeatDirective.spec.
                                subtitle-click="changeParagraph">
                               ¶
                             </a>
-                            <span class="subtitle-text">[[ subtitle.content() ]]</span>
+                            <span class="subtitle-text">[[ subtitle.content()  | decode ]]</span>
                         </li>
 
                     </ul>
