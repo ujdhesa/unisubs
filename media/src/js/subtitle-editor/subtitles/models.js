@@ -73,7 +73,7 @@ var angular = angular || null;
 
     Subtitle.prototype.content = function() {
         /* Get the content of this subtitle as HTML */
-        return dfxp.markdownToHTML(this.markdown);
+        return _.unescape(dfxp.markdownToHTML(this.markdown));
     }
 
     Subtitle.prototype.isEmpty = function() {
