@@ -464,8 +464,9 @@ var USER_IDLE_MINUTES = 15;
         }
     }).filter("decode",function() {
         return function(str) {
+            if (str == undefined) return str;
             var el = document.createElement("div");
-            el.innerHTML = str;
+            el.innerHTML = str.replace(/<br( )?(\/)?>/g, "<br /> ");
             str =   el.textContent || el.innerText;
             return str;
         }
